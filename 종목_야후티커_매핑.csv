@@ -1,5 +1,6 @@
 yahoo_ticker,original_ticker,name,market,theme,fairPrice,targetPrice
 SPY,"SPY(VOO,SPYM)",S&P500 ETF,US,빅테크,732.2,805
+SPCX,SPCX,Space Exploration Technologies,US,우주,150,200
 QQQ,QQQ,Invesco QQQ Trust,US,빅테크,655.6,756
 DIA,DIA,다우존스 ETF,US,빅테크,487.8,517
 SMH,SMH,반도체 ETF,US,반도체,532,650
