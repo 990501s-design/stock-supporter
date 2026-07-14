@@ -143,13 +143,15 @@ function favoritesStorageKey(id) {
 function loadFavorites(id) {
   try {
     var raw = localStorage.getItem(favoritesStorageKey(id));
-    // 특정 ID로 처음 전환하는 경우, 기존(ID 없이 저장된) 즐겨찾기를 그대로 이어받는다.
-    if (raw === null && id) {
+    // ID 없이 저장돼 있던 옛 즐겨찾기는, 처음으로 ID를 설정할 때 딱 한 번만 이어받는다.
+    // (이후 다른 ID로 전환할 때마다 매번 복제되지 않도록 "이미 이어받았는지" 표시를 남긴다)
+    if (raw === null && id && !localStorage.getItem("stockSupporterFavoritesLegacyClaimed")) {
       var legacy = localStorage.getItem("stockSupporterFavorites");
       if (legacy) {
         localStorage.setItem(favoritesStorageKey(id), legacy);
         raw = legacy;
       }
+      localStorage.setItem("stockSupporterFavoritesLegacyClaimed", "1");
     }
     return JSON.parse(raw || "{}");
   } catch (e) {
@@ -252,14 +254,15 @@ function savePortfolioId(id) {
 function loadPortfolio(id) {
   try {
     var raw = localStorage.getItem(portfolioStorageKey(id));
-    // 특정 ID로 처음 전환하는 경우, 기존(ID 없이 저장된) 포트폴리오를 그대로 이어받아
-    // 데이터가 사라지지 않도록 한다.
-    if (raw === null && id) {
+    // ID 없이 저장돼 있던 옛 포트폴리오는, 처음으로 ID를 설정할 때 딱 한 번만 이어받는다.
+    // (이후 다른 ID로 전환할 때마다 매번 복제되지 않도록 "이미 이어받았는지" 표시를 남긴다)
+    if (raw === null && id && !localStorage.getItem("stockSupporterPortfolioLegacyClaimed")) {
       var legacy = localStorage.getItem("stockSupporterPortfolio");
       if (legacy) {
         localStorage.setItem(portfolioStorageKey(id), legacy);
         raw = legacy;
       }
+      localStorage.setItem("stockSupporterPortfolioLegacyClaimed", "1");
     }
     return JSON.parse(raw || "[]");
   } catch (e) {
