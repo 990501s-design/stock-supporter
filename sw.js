@@ -4,7 +4,7 @@
 // -> 컴퓨터에서 update_stock_data.py 로 HTML을 갱신한 뒤 재배포하면,
 //    폰 앱은 다음 접속 시 온라인 상태에서 자동으로 최신 내용을 받아온다.
 
-var CACHE_NAME = "stock-supporter-v1";
+var CACHE_NAME = "stock-supporter-v2";
 var ASSETS = ["./주식서포터.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", function (event) {
@@ -25,7 +25,9 @@ self.addEventListener("activate", function (event) {
 self.addEventListener("fetch", function (event) {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    fetch(event.request)
+    // GitHub Pages가 HTML/manifest 등에 캐시(max-age)를 걸어두므로,
+    // 브라우저 HTTP 캐시를 우회해서 항상 진짜 최신 파일을 받아온다.
+    fetch(event.request, { cache: "no-store" })
       .then(function (res) {
         var resClone = res.clone();
         caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, resClone); });
