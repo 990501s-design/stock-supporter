@@ -150,6 +150,63 @@ function saveFavorites(favorites) {
   } catch (e) { /* localStorage 사용 불가 시 세션 내에서만 유지 */ }
 }
 
+/* ------------------------------------------------------------------ */
+/* Firebase Firestore REST API (포트폴리오 클라우드 동기화)                    */
+/* ID로 어느 기기에서든 같은 포트폴리오를 볼 수 있게 함.                          */
+/* Firestore SDK 대신 REST API를 fetch로 직접 호출한다 (연결 안정성이 더 높음). */
+/* ------------------------------------------------------------------ */
+var FIREBASE_PROJECT_ID = "stock-supporter-5f99e";
+var FIREBASE_API_KEY = "AIzaSyD7KGEvtqFIhSauLO-G2xzPcuG1v-VZtFo";
+var FIRESTORE_BASE = "https://firestore.googleapis.com/v1/projects/" + FIREBASE_PROJECT_ID + "/databases/default/documents";
+
+function firestoreGet(collection, id) {
+  return fetch(FIRESTORE_BASE + "/" + collection + "/" + id + "?key=" + FIREBASE_API_KEY)
+    .then(function (res) {
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error("firestore get failed: " + res.status);
+      return res.json();
+    })
+    .then(function (doc) {
+      if (!doc || !doc.fields || !doc.fields.json) return null;
+      try { return JSON.parse(doc.fields.json.stringValue); } catch (e) { return null; }
+    })
+    .catch(function (e) { return null; });
+}
+
+function firestoreSet(collection, id, data) {
+  var body = {
+    fields: {
+      json: { stringValue: JSON.stringify(data) },
+      updatedAt: { integerValue: String(Date.now()) }
+    }
+  };
+  return fetch(FIRESTORE_BASE + "/" + collection + "/" + id + "?key=" + FIREBASE_API_KEY, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).catch(function (e) { /* 네트워크 오류 시 무시 (로컬 저장은 이미 완료된 상태) */ });
+}
+
+function cloudSavePortfolio(id, portfolio) {
+  if (!id) return;
+  firestoreSet("portfolios", id, portfolio);
+}
+
+function cloudSaveHistory(id, history) {
+  if (!id) return;
+  firestoreSet("history", id, history);
+}
+
+function cloudLoadPortfolio(id) {
+  if (!id) return Promise.resolve(null);
+  return firestoreGet("portfolios", id);
+}
+
+function cloudLoadHistory(id) {
+  if (!id) return Promise.resolve(null);
+  return firestoreGet("history", id);
+}
+
 function portfolioStorageKey(id) {
   return id ? "stockSupporterPortfolio_" + id : "stockSupporterPortfolio";
 }
@@ -190,6 +247,7 @@ function savePortfolio(portfolio) {
   try {
     localStorage.setItem(portfolioStorageKey(state.portfolioId), JSON.stringify(portfolio));
   } catch (e) { /* localStorage 사용 불가 시 세션 내에서만 유지 */ }
+  cloudSavePortfolio(state.portfolioId, portfolio);
   recordPortfolioSnapshot();
 }
 
@@ -227,6 +285,7 @@ function recordPortfolioSnapshot() {
   if (idx !== -1) history[idx] = todayEntry;
   else history.push(todayEntry);
   savePortfolioHistory(state.portfolioId, history);
+  cloudSaveHistory(state.portfolioId, history);
 }
 
 var state = {
@@ -259,10 +318,28 @@ var state = {
   editingTicker: null,
   cashCurrency: "KRW",
   showAddStockForm: false,
-  showAddCashForm: false
+  showAddCashForm: false,
+  portfolioSyncing: false
 };
 
 recordPortfolioSnapshot();
+
+// 앱 시작 시 이미 설정된 ID가 있으면 클라우드의 최신 데이터를 백그라운드로 가져와
+// 다른 기기에서 수정한 내용이 있으면 반영한다 (없으면 로컬 데이터를 그대로 사용).
+if (state.portfolioId) {
+  cloudLoadPortfolio(state.portfolioId).then(function (cloudData) {
+    if (cloudData) {
+      state.portfolio = cloudData;
+      try { localStorage.setItem(portfolioStorageKey(state.portfolioId), JSON.stringify(cloudData)); } catch (e) {}
+      render();
+    }
+  });
+  cloudLoadHistory(state.portfolioId).then(function (cloudHistory) {
+    if (cloudHistory) {
+      savePortfolioHistory(state.portfolioId, cloudHistory);
+    }
+  });
+}
 
 function toggleFavorite(ticker) {
   if (state.favorites[ticker]) delete state.favorites[ticker];
@@ -719,6 +796,29 @@ function confirmPortfolioId() {
   state.showPortfolioIdForm = false;
   state.portfolioIdError = "";
   render();
+
+  state.portfolioSyncing = true;
+  render();
+  cloudLoadPortfolio(id).then(function (cloudData) {
+    if (cloudData) {
+      // 클라우드에 이미 저장된 데이터가 있으면 그것을 최신으로 보고 반영
+      state.portfolio = cloudData;
+      try { localStorage.setItem(portfolioStorageKey(id), JSON.stringify(cloudData)); } catch (e) {}
+    } else {
+      // 클라우드에 없으면 지금 가진 로컬 데이터를 클라우드에 올린다
+      cloudSavePortfolio(id, state.portfolio);
+    }
+    return cloudLoadHistory(id);
+  }).then(function (cloudHistory) {
+    if (cloudHistory) {
+      savePortfolioHistory(id, cloudHistory);
+    } else {
+      cloudSaveHistory(id, loadPortfolioHistory(id));
+    }
+  }).catch(function (e) { /* 무시: 로컬 데이터로 계속 사용 */ }).then(function () {
+    state.portfolioSyncing = false;
+    render();
+  });
 }
 
 function addCashHolding() {
@@ -991,7 +1091,7 @@ function portfolioPageHtml() {
     ? (
         '<div style="background:#1B1F26;border:1px solid #2A2F38;border-radius:10px;padding:10px 12px;margin-bottom:12px">' +
           '<div style="display:flex;align-items:center;justify-content:space-between">' +
-            '<div style="font-size:12px;color:#8B93A1">포트폴리오 ID <span style="color:#F5F6F8;font-weight:600">' + esc(state.portfolioId) + '</span></div>' +
+            '<div style="font-size:12px;color:#8B93A1">포트폴리오 ID <span style="color:#F5F6F8;font-weight:600">' + esc(state.portfolioId) + '</span>' + (state.portfolioSyncing ? ' <span style="color:#5B6270">· 동기화 중...</span>' : ' <span style="color:#4C8DFF">· 클라우드 연결됨</span>') + '</div>' +
             '<div style="display:flex;gap:6px">' +
               '<button data-action="toggle-portfolio-history" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">' + (state.showPortfolioHistory ? "추이 닫기" : "자산 추이") + '</button>' +
               '<button data-action="toggle-portfolio-id-form" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">ID 변경</button>' +
