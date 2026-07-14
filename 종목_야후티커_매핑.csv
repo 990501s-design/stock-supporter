@@ -1,0 +1,177 @@
+yahoo_ticker,original_ticker,name,market,theme,fairPrice,targetPrice
+SPY,"SPY(VOO,SPYM)",S&P500 ETF,US,빅테크,732.2,805
+QQQ,QQQ,Invesco QQQ Trust,US,빅테크,655.6,756
+DIA,DIA,다우존스 ETF,US,빅테크,487.8,517
+SMH,SMH,반도체 ETF,US,반도체,532,650
+NVDA,NVDA,NVIDIA,US,반도체,230,270
+TSLA,TSLA,Tesla,US,빅테크,350,500
+GOOG,GOOG,Alphabet,US,빅테크,375,450
+AMZN,AMZN,Amazon,US,빅테크,250,300
+AAPL,AAPL,Apple,US,빅테크,260,310
+MSFT,MSFT,Microsoft,US,빅테크,440.1,550
+META,META,Meta Platforms,US,빅테크,714,840
+AVGO,AVGO,Broadcom,US,반도체,390,509
+NFLX,NFLX,Netflix,US,빅테크,100,117
+LLY,LLY,Eli Lilly,US,제약,900,1150
+NVO,NVO,Novo Nordisk,US,제약,60,80
+MRK,MRK,Merck,US,제약,110,135
+ORCL,Oracle,Oracle,US,빅테크,211,250
+DELL,DELL,Dell Technologies,US,반도체,388,505
+CRWD,CRWD,CrowdStrike,US,빅테크,548,690
+CRM,CRM,Salesforce,US,빅테크,200,221
+CRWV,CRWV,CoreWeave,US,빅테크,110,130
+RIVN,RIVN,Rivian,US,소비재,16,25
+ZM,ZM,Zoom,US,빅테크,85,100
+MU,MU,Micron Technology,US,반도체,1222,1650
+SNDK,SNDK,SanDisk,US,반도체,2200,2400
+WDC,WDC,Western Digital,US,반도체,684,900
+STX,STX,Seagate Technology,US,반도체,990,1224
+MRVL,MRVL,Marvell Technology,US,반도체,208,273
+LITE,LITE,Lumentum,US,반도체,953.4,1150
+COHR,COHR,Coherent,US,반도체,325,468
+AMD,AMD,AMD,US,반도체,380.4,480
+INTC,INTC,Intel,US,반도체,109,130
+TSM,TSM,TSMC,US,반도체,342,440
+ASML,ASML,ASML,US,반도체,1052,1461
+ARM,ARM,Arm Holdings,US,반도체,217,334
+COST,COST,Costco,US,소비재,968,1050
+UNH,UNH,UnitedHealth,US,제약,330,367
+CMG,CMG,Chipotle,US,소비재,36,45
+DPZ,DPZ,Domino's Pizza,US,소비재,405,450
+NKE,NIKE,Nike,US,소비재,41,56
+LULU,LULU,Lululemon,US,소비재,126,160
+CROX,Crocs,Crocs,US,소비재,100,154
+SBUX,SBUX,Starbucks,US,소비재,83,105
+BOTZ,BOTZ,로보틱스 ETF,US,로봇,32,38
+ISRG,ISRG,Intuitive Surgical,US,로봇,477,650
+M,Macy's,Macy's,US,소비재,22,25
+HD,HD,Home Depot,US,소비재,300,346
+IONQ,IONQ,IonQ,US,양자컴퓨팅,50,65
+QBTS,QBTS,D-Wave Quantum,US,양자컴퓨팅,22,40
+RGTI,RGTI,Rigetti Computing,US,양자컴퓨팅,20,35
+QUBT,QUBT,Quantum Computing Inc,US,양자컴퓨팅,12.5,20
+QNT,QNT,Quanta Services,US,전력,60,100
+ARQQ,ARQQ,Arqit Quantum,US,양자컴퓨팅,16,35
+IBM,IBM,IBM,US,빅테크,250,325
+SPXC,SPXC,SPX Technologies,US,전력,135,165
+RKLB,RKLB,Rocket Lab,US,우주,101.4,120.9
+PL,PL,Planet Labs,US,우주,33,52
+RDW,RDW,Redwire,US,우주,18,26
+ASTS,ASTS,AST SpaceMobile,US,우주,94.9,117
+GSAT,GSAT,Globalstar,US,우주,78,91
+LUNR,LUNR,Intuitive Machines,US,우주,30,40
+SMCI,SMCI,Super Micro Computer,US,반도체,32,48
+SOUN,SOUN,SoundHound AI,US,빅테크,9,16
+SOFI,SOFI,SoFi Technologies,US,금융,12,27.5
+V,V,Visa,US,금융,300,400
+RBLX,RBLX,Roblox,US,빅테크,65,80
+PLTR,PLTR,Palantir,US,빅테크,150,200
+U,U,Unity Software,US,빅테크,25,48
+SNOW,SNOW,Snowflake,US,빅테크,230,264
+VUZI,VUZI,Vuzix,US,로봇,1.6,5
+NTLA,NTLA,Intellia Therapeutics,US,제약,15,16
+ABNB,ABNB,Airbnb,US,소비재,118,165
+DIS,DIS,Disney,US,소비재,110,130
+PYPL,PYPL,PayPal,US,금융,59,65
+ENPH,ENPH,Enphase Energy,US,전력,34,38
+AFRM,AFRM,Affirm,US,금융,60,90
+APPS,APPS,Digital Turbine,US,빅테크,3,5.2
+BAC,BAC,Bank of America,US,금융,57,66
+JPM,JPM,JPMorgan Chase,US,금융,300,333
+GS,GS,Goldman Sachs,US,금융,870,1048
+WMT,WMT,Walmart,US,소비재,123,141
+KO,KO,Coca-Cola,US,소비재,56,70.9
+ADBE,ADBE,Adobe,US,빅테크,226.1,274.6
+TGT,Target,Target,US,소비재,116,138
+CHPT,CHPT,ChargePoint,US,전력,8,9
+NIO,NIO,NIO,US,소비재,5.1,7.6
+LCID,LCID,Lucid Group,US,소비재,6,13
+KOPN,KOPN,Kopin,US,로봇,2,4.4
+XYZ,Block XYZ,Block (Square),US,금융,62,86
+Z,Zillow,Zillow,US,빅테크,46,70
+INVH,INVHR,Invitation Homes,US,금융,7.3,11
+ABCL,ABCL,AbCellera Biologics,US,제약,3.2,14.2
+GPRO,GPRO,GoPro,US,소비재,1.4,2.3
+CRSP,CRSP,CRISPR Therapeutics,US,제약,52,74
+UBER,UBER,Uber,US,빅테크,82,100
+BBY,BBY,Best Buy,US,소비재,70,90
+CAR,CAR,Avis Budget,US,소비재,140,150
+CRCL,Circle,Circle Internet,US,금융,90,120
+JOBY,JOBY,Joby Aviation,US,로봇,14,18
+TEM,TEM,Tempus AI,US,제약,60,80
+PFE,PFE,Pfizer,US,제약,30,42
+IREN,IREN,IREN,US,반도체,40,50
+NBIS,Nebius,Nebius Group,US,빅테크,180,250.5
+CRDO,CRDO,Credo Technology,US,반도체,270,325
+PANW,PANW,Palo Alto Networks,US,빅테크,220,300
+PGY,PGY,Pagaya Technologies,US,금융,30,40
+SHOP,SHOP,Shopify,US,빅테크,135,180
+APP,APP,AppLovin,US,빅테크,427,520
+MCD,MCD,McDonald's,US,소비재,300,344
+ANET,ANET,Arista Networks,US,빅테크,140,170
+FIG,FIG,Figma,US,빅테크,22.5,38
+DAL,DAL,Delta Air Lines,US,소비재,65,80
+PATH,PATH,UiPath,US,로봇,12,20
+SERV,SERV,Serve Robotics,US,로봇,10,16
+JNJ,JNJ,Johnson & Johnson,US,제약,216,250
+VZ,VZ,Verizon,US,빅테크,46,55
+BE,BE,Bloom Energy,US,전력,178,260
+LRCX,LRCX,Lam Research,US,반도체,200,303
+005930.KS,삼성전자,삼성전자,KR,반도체,308550,560000
+000660.KS,SK하이닉스,SK하이닉스,KR,반도체,2400625,3795000
+005380.KS,현대차,현대차,KR,소비재,536400,700700
+035420.KS,네이버,NAVER,KR,빅테크,242000,266000
+RDDT,RDDT,Reddit,US,빅테크,168,220
+EL,EL,Estee Lauder,US,소비재,75,100
+GLW,GLW,Corning,US,반도체,150,200
+CSCO,CSCO,Cisco Systems,US,빅테크,100,117
+USAR,USAR,USA Rare Earth,US,전력,21,35
+NOW,NOW,ServiceNow,US,빅테크,87,115
+ZS,ZS,Zscaler,US,빅테크,130,180
+HPE,HPE,Hewlett Packard Enterprise,US,빅테크,60,102
+DRAM,DRAM,DRAM 관련(메모리),US,반도체,71,92
+BTC-USD,BTC,비트코인,US,가상자산,,
+ETH-USD,ETH,이더리움,US,가상자산,,
+0131V0.KS,0131V0,1Q 미국우주항공&방산,KR,우주,,
+133690.KS,133690,TIGER 미국나스닥100,KR,빅테크,,
+381170.KS,381170,TIGER 미국테크TOP10,KR,빅테크,,
+390390.KS,390390,KODEX 미국반도체,KR,반도체,,
+395160.KS,395160,KODEX AI반도체TOP2Plus,KR,반도체,,
+418660.KS,418660,TIGER 미국나스닥100레버리지,KR,빅테크,,
+442580.KS,442580,PLUS 글로벌HBM반도체,KR,반도체,,
+465610.KS,465610,ACE 미국빅테크TOP7+레버리지,KR,빅테크,,
+SOXX,SOXX,iShares 반도체 ETF,US,반도체,,
+SATL,SATL,Satellogic,US,우주,,
+009150.KS,삼성전기,삼성전기,KR,반도체,,
+095610.KQ,테스,테스,KR,반도체,,
+^KS11,KOSPI,코스피 지수,KR,지수,,
+^KQ11,KOSDAQ,코스닥 지수,KR,지수,,
+042700.KS,한미반도체,한미반도체,KR,반도체,,
+058470.KQ,리노공업,리노공업,KR,반도체,,
+000990.KS,DB하이텍,DB하이텍,KR,반도체,,
+039030.KQ,이오테크닉스,이오테크닉스,KR,반도체,,
+240810.KQ,원익IPS,원익IPS,KR,반도체,,
+319660.KQ,피에스케이,피에스케이,KR,반도체,,
+064760.KQ,티씨케이,티씨케이,KR,반도체,,
+095340.KQ,ISC,ISC,KR,반도체,,
+277810.KQ,레인보우로보틱스,레인보우로보틱스,KR,로봇,,
+454910.KS,두산로보틱스,두산로보틱스,KR,로봇,,
+108490.KQ,로보티즈,로보티즈,KR,로봇,,
+015760.KS,한국전력,한국전력,KR,전력,,
+010120.KS,LS ELECTRIC,LS ELECTRIC,KR,전력,,
+267260.KS,HD현대일렉트릭,HD현대일렉트릭,KR,전력,,
+298040.KS,효성중공업,효성중공업,KR,전력,,
+009540.KS,HD한국조선해양,HD한국조선해양,KR,조선,,
+042660.KS,한화오션,한화오션,KR,조선,,
+010140.KS,삼성중공업,삼성중공업,KR,조선,,
+105560.KS,KB금융,KB금융,KR,금융,,
+055550.KS,신한지주,신한지주,KR,금융,,
+086790.KS,하나금융지주,하나금융지주,KR,금융,,
+051900.KS,LG생활건강,LG생활건강,KR,소비재,,
+090430.KS,아모레퍼시픽,아모레퍼시픽,KR,소비재,,
+035720.KS,카카오,카카오,KR,빅테크,,
+207940.KS,삼성바이오로직스,삼성바이오로직스,KR,제약,,
+068270.KS,셀트리온,셀트리온,KR,제약,,
+272210.KS,한화시스템,한화시스템,KR,우주,,
+047810.KS,한국항공우주,한국항공우주,KR,우주,,
+475300.KS,475300,SOL반도체전공정,KR,반도체,,
