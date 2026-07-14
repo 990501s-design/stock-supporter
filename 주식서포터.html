@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>주식 서포터</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0B0D10">
@@ -32,9 +32,9 @@
   input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; background: #22262E; border-radius: 2px; outline: none; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #5DCAA5; cursor: pointer; }
   input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #5DCAA5; cursor: pointer; border: none; }
-  input[type=text], input[type=number] {
+  input[type=text], input[type=number], input[type=password] {
     width: 100%; background: #15181D; border: 1px solid #22262E; border-radius: 10px;
-    padding: 10px 12px; color: #F5F6F8; font-size: 13.5px;
+    padding: 10px 12px; color: #F5F6F8; font-size: 16px;
   }
   .theme-chip {
     flex-shrink: 0; padding: 7px 13px; border-radius: 999px; font-size: 12.5px; white-space: nowrap;
@@ -254,6 +254,10 @@ function cloudSavePasswordHash(id, hash) {
 function cloudDeletePasswordHash(id) {
   if (!id) return Promise.resolve();
   return fetch(FIRESTORE_BASE + "/passwords/" + id + "?key=" + FIREBASE_API_KEY, { method: "DELETE" }).catch(function (e) {});
+}
+
+function firestoreDelete(collection, id) {
+  return fetch(FIRESTORE_BASE + "/" + collection + "/" + id + "?key=" + FIREBASE_API_KEY, { method: "DELETE" }).catch(function (e) {});
 }
 
 function portfolioStorageKey(id) {
@@ -959,6 +963,26 @@ function savePasswordForm() {
   });
 }
 
+// 현재 ID의 포트폴리오/자산추이/즐겨찾기를 로컬+클라우드에서 완전히 삭제하고 빈 상태로 되돌린다.
+// (다른 ID로 실수로 전환했다가 데이터가 복제된 경우, 그 ID를 완전히 비우는 용도)
+function resetCurrentPortfolio() {
+  var id = state.portfolioId;
+  if (!id) return;
+  var ok = window.confirm("포트폴리오 ID " + id + "의 데이터(포트폴리오·자산추이·즐겨찾기)를 완전히 삭제하고 빈 상태로 되돌립니다. 계속할까요?");
+  if (!ok) return;
+  try {
+    localStorage.removeItem(portfolioStorageKey(id));
+    localStorage.removeItem(historyStorageKey(id));
+    localStorage.removeItem(favoritesStorageKey(id));
+  } catch (e) {}
+  state.portfolio = [];
+  state.favorites = {};
+  firestoreDelete("portfolios", id);
+  firestoreDelete("history", id);
+  firestoreDelete("favorites", id);
+  render();
+}
+
 function addCashHolding() {
   var amountInput = document.getElementById("portfolio-cash-input");
   var amount = parseFloat(amountInput ? amountInput.value : "");
@@ -1235,6 +1259,7 @@ function portfolioPageHtml() {
               '<button data-action="toggle-portfolio-history" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">' + (state.showPortfolioHistory ? "추이 닫기" : "자산 추이") + '</button>' +
               '<button data-action="toggle-portfolio-id-form" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">ID 변경</button>' +
               '<button data-action="open-password-form" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">' + (state.hasPassword ? "비밀번호 변경/삭제" : "비밀번호 설정") + '</button>' +
+              '<button data-action="reset-portfolio" style="background:none;border:1px solid #E24B4A;border-radius:6px;color:#E24B4A;font-size:11px;cursor:pointer;padding:4px 8px">초기화</button>' +
             '</div>' +
           '</div>' +
           (state.showPortfolioIdForm ? idFormHtml : "") +
@@ -2087,6 +2112,8 @@ document.addEventListener("click", function (e) {
     if (e.target === el) { state.showPasswordForm = false; render(); }
   } else if (action === "save-password") {
     savePasswordForm();
+  } else if (action === "reset-portfolio") {
+    resetCurrentPortfolio();
   } else if (action === "stop") {
     e.stopPropagation();
   }
