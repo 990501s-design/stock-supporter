@@ -1081,7 +1081,7 @@ function portfolioPageHtml() {
   var idFormHtml =
     '<div style="margin-top:8px">' +
       '<div style="display:flex;gap:8px">' +
-        '<input type="text" id="portfolio-id-input" placeholder="숫자 4자리 (예: 2064)" maxlength="4" inputmode="numeric" value="' + esc(state.portfolioIdInput) + '" style="flex:1;min-width:0;box-sizing:border-box">' +
+        '<input type="text" id="portfolio-id-input" placeholder="숫자 4자리 (예: 0000)" maxlength="4" inputmode="numeric" value="' + esc(state.portfolioIdInput) + '" style="flex:1;min-width:0;box-sizing:border-box">' +
         '<button data-action="confirm-portfolio-id" style="padding:0 14px;border-radius:8px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:12px">확인</button>' +
       '</div>' +
       (state.portfolioIdError ? '<div style="font-size:11px;color:#E24B4A;margin-top:6px">' + esc(state.portfolioIdError) + '</div>' : "") +
