@@ -364,12 +364,22 @@ def calc_rsi(close_series, period=RSI_PERIOD):
 
 def build_ticker_result(closes):
     price = float(closes.iloc[-1])
+    prev_close = float(closes.iloc[-2]) if len(closes) >= 2 else None
+    change_pct = ((price - prev_close) / prev_close * 100) if prev_close else None
     rsi = calc_rsi(closes)
     support, resistance = calc_support_resistance(closes, price)
     hist_closes = closes.tail(HIST_POINTS)
     hist = [float(v) for v in hist_closes]
     channel = calc_channel(hist_closes)
-    return {"price": price, "rsi": rsi, "hist": hist, "support": support, "resistance": resistance, "channel": channel}
+    return {
+        "price": price,
+        "changePct": change_pct,
+        "rsi": rsi,
+        "hist": hist,
+        "support": support,
+        "resistance": resistance,
+        "channel": channel,
+    }
 
 
 def fetch_all(yahoo_tickers):
@@ -426,21 +436,26 @@ def build_seed_stocks(mapping_rows, fetched, fallback_map):
         if fetched_val is not None and fetched_val.get("rsi") is not None:
             price = fetched_val["price"]
             rsi = fetched_val["rsi"]
+            change_pct = fetched_val.get("changePct")
         elif fallback is not None:
             print(f"  ⚠️ '{original_ticker}'({yahoo_ticker}) 최신 데이터 없어 이전 값 유지")
             price = fallback["price"]
             rsi = fallback["rsi"]
+            change_pct = fallback.get("changePct")
         elif fair_price is not None:
             print(f"  🚨 '{original_ticker}'({yahoo_ticker}) 데이터 없음, fairPrice로 대체")
             price = fair_price
             rsi = 50
+            change_pct = None
         else:
             print(f"  🚨 '{original_ticker}'({yahoo_ticker}) 데이터 없음, 가격을 알 수 없습니다")
             price = 0
             rsi = 50
+            change_pct = None
 
         price = round_price(price, market)
         rsi = int(round(max(0, min(100, rsi))))
+        change_pct = round(change_pct, 2) if change_pct is not None else None
 
         seed.append({
             "no": i,
@@ -451,6 +466,7 @@ def build_seed_stocks(mapping_rows, fetched, fallback_map):
             "targetPrice": target_price,
             "fairPrice": fair_price,
             "price": price,
+            "changePct": change_pct,
             "rsi": rsi,
             "note": ""
         })

@@ -1,0 +1,41 @@
+name: Update Stock Data
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-stock-data
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install pandas requests yfinance
+
+      - name: Run update script
+        run: python3 update_stock_data.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- 주식서포터.html; then
+            echo "변경 없음, 커밋 생략"
+          else
+            git add 주식서포터.html
+            git commit -m "chore: 주가/RSI/등락률 자동 갱신 [skip ci]"
+            git push
+          fi
