@@ -136,9 +136,22 @@ var THEMES = ["전체", "반도체", "우주", "빅테크", "로봇", "양자컴
 // 설치된 앱에서는 "데이터 업데이트" 버튼을 숨긴다 (업데이트는 컴퓨터에서 HTML을 갱신 후 재배포).
 var IS_STANDALONE = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 
-function loadFavorites() {
+function favoritesStorageKey(id) {
+  return id ? "stockSupporterFavorites_" + id : "stockSupporterFavorites";
+}
+
+function loadFavorites(id) {
   try {
-    return JSON.parse(localStorage.getItem("stockSupporterFavorites") || "{}");
+    var raw = localStorage.getItem(favoritesStorageKey(id));
+    // 특정 ID로 처음 전환하는 경우, 기존(ID 없이 저장된) 즐겨찾기를 그대로 이어받는다.
+    if (raw === null && id) {
+      var legacy = localStorage.getItem("stockSupporterFavorites");
+      if (legacy) {
+        localStorage.setItem(favoritesStorageKey(id), legacy);
+        raw = legacy;
+      }
+    }
+    return JSON.parse(raw || "{}");
   } catch (e) {
     return {};
   }
@@ -146,8 +159,9 @@ function loadFavorites() {
 
 function saveFavorites(favorites) {
   try {
-    localStorage.setItem("stockSupporterFavorites", JSON.stringify(favorites));
+    localStorage.setItem(favoritesStorageKey(state.portfolioId), JSON.stringify(favorites));
   } catch (e) { /* localStorage 사용 불가 시 세션 내에서만 유지 */ }
+  cloudSaveFavorites(state.portfolioId, favorites);
 }
 
 /* ------------------------------------------------------------------ */
@@ -205,6 +219,16 @@ function cloudLoadPortfolio(id) {
 function cloudLoadHistory(id) {
   if (!id) return Promise.resolve(null);
   return firestoreGet("history", id);
+}
+
+function cloudSaveFavorites(id, favorites) {
+  if (!id) return;
+  firestoreSet("favorites", id, favorites);
+}
+
+function cloudLoadFavorites(id) {
+  if (!id) return Promise.resolve(null);
+  return firestoreGet("favorites", id);
 }
 
 function portfolioStorageKey(id) {
@@ -301,7 +325,7 @@ var state = {
   uploadParsed: null,
   uploadError: "",
   uploadFileName: "",
-  favorites: loadFavorites(),
+  favorites: loadFavorites(loadPortfolioId()),
   huntHarvestTab: "hunt",
   portfolioId: loadPortfolioId(),
   portfolio: loadPortfolio(loadPortfolioId()),
@@ -337,6 +361,13 @@ if (state.portfolioId) {
   cloudLoadHistory(state.portfolioId).then(function (cloudHistory) {
     if (cloudHistory) {
       savePortfolioHistory(state.portfolioId, cloudHistory);
+    }
+  });
+  cloudLoadFavorites(state.portfolioId).then(function (cloudFavorites) {
+    if (cloudFavorites) {
+      state.favorites = cloudFavorites;
+      try { localStorage.setItem(favoritesStorageKey(state.portfolioId), JSON.stringify(cloudFavorites)); } catch (e) {}
+      render();
     }
   });
 }
@@ -793,6 +824,7 @@ function confirmPortfolioId() {
   state.portfolioId = id;
   savePortfolioId(id);
   state.portfolio = loadPortfolio(id);
+  state.favorites = loadFavorites(id);
   state.showPortfolioIdForm = false;
   state.portfolioIdError = "";
   render();
@@ -814,6 +846,14 @@ function confirmPortfolioId() {
       savePortfolioHistory(id, cloudHistory);
     } else {
       cloudSaveHistory(id, loadPortfolioHistory(id));
+    }
+    return cloudLoadFavorites(id);
+  }).then(function (cloudFavorites) {
+    if (cloudFavorites) {
+      state.favorites = cloudFavorites;
+      try { localStorage.setItem(favoritesStorageKey(id), JSON.stringify(cloudFavorites)); } catch (e) {}
+    } else {
+      cloudSaveFavorites(id, state.favorites);
     }
   }).catch(function (e) { /* 무시: 로컬 데이터로 계속 사용 */ }).then(function () {
     state.portfolioSyncing = false;
@@ -1280,10 +1320,10 @@ function portfolioDetailModalHtml() {
   return (
     '<div class="modal-backdrop" data-action="close-portfolio-detail">' +
       '<div class="modal-sheet" data-action="stop">' +
-        '<div style="position:sticky;top:0;margin:-20px -20px 6px;padding:20px 20px 10px;background:#15181D;z-index:5;border-radius:20px 20px 0 0;display:flex;justify-content:space-between;align-items:center">' +
-          '<div style="font-size:17px;font-weight:700;color:#F5F6F8">섹터 · 실제 노출 종목</div>' +
-          '<button class="close-btn" data-action="close-portfolio-detail">&times;</button>' +
+        '<div style="position:sticky;top:8px;height:0;text-align:right;z-index:5">' +
+          '<button class="close-btn" data-action="close-portfolio-detail" style="background:#1B1F26;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.4)">&times;</button>' +
         '</div>' +
+        '<div style="font-size:17px;font-weight:700;color:#F5F6F8;margin:0 0 12px">섹터 · 실제 노출 종목</div>' +
         '<div class="info-box" style="margin-bottom:18px">ETF 보유분은 구성종목 상위 7개 비중을 반영해 실제 노출 종목을 추정한 값입니다. 환율은 1$ = ' + rate.toLocaleString() + '원 적용. 참고용 추정치이며 실제 비중과 다를 수 있습니다.</div>' +
         '<div style="font-size:14px;font-weight:600;color:#F5F6F8;margin-bottom:14px">섹터 비중</div>' +
         bigBarListHtml(sectorExposure, totalKRW) +
@@ -1466,13 +1506,13 @@ function stockDetailHtml(stock) {
   return (
     '<div class="modal-backdrop" data-action="close-modal">' +
       '<div class="modal-sheet" data-action="stop">' +
-        '<div style="position:sticky;top:0;margin:-20px -20px 4px;padding:20px 20px 10px;background:#15181D;z-index:5;border-radius:20px 20px 0 0;display:flex;justify-content:space-between;align-items:flex-start">' +
-          '<div>' +
-            '<div style="font-size:12px;color:#8B93A1;margin-bottom:2px">' + (s.market === "KR" ? "국내" : "미국") + ' · ' + esc(s.theme) + '</div>' +
-            '<div style="font-size:20px;font-weight:600;color:#F5F6F8">' + esc(s.name) + '</div>' +
-            '<div style="font-size:13px;color:#8B93A1">' + esc(s.ticker) + '</div>' +
-          '</div>' +
-          '<button class="close-btn" data-action="close-modal">&times;</button>' +
+        '<div style="position:sticky;top:8px;height:0;text-align:right;z-index:5">' +
+          '<button class="close-btn" data-action="close-modal" style="background:#1B1F26;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.4)">&times;</button>' +
+        '</div>' +
+        '<div>' +
+          '<div style="font-size:12px;color:#8B93A1;margin-bottom:2px">' + (s.market === "KR" ? "국내" : "미국") + ' · ' + esc(s.theme) + '</div>' +
+          '<div style="font-size:20px;font-weight:600;color:#F5F6F8">' + esc(s.name) + '</div>' +
+          '<div style="font-size:13px;color:#8B93A1">' + esc(s.ticker) + '</div>' +
         '</div>' +
         '<div style="display:flex;align-items:baseline;gap:10px;margin:14px 0 18px">' +
           '<span style="font-size:30px;font-weight:600;color:#F5F6F8">' + fmtPrice(s) + '</span>' +
