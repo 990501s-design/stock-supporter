@@ -233,6 +233,29 @@ function cloudLoadFavorites(id) {
   return firestoreGet("favorites", id);
 }
 
+// ID별 비밀번호(선택사항). 비밀번호 원문은 저장하지 않고 SHA-256 해시만 저장한다.
+function sha256Hex(text) {
+  var enc = new TextEncoder().encode(text);
+  return crypto.subtle.digest("SHA-256", enc).then(function (buf) {
+    return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+  });
+}
+
+function cloudLoadPasswordHash(id) {
+  if (!id) return Promise.resolve(null);
+  return firestoreGet("passwords", id).then(function (data) { return data && data.hash ? data.hash : null; });
+}
+
+function cloudSavePasswordHash(id, hash) {
+  if (!id) return;
+  firestoreSet("passwords", id, { hash: hash });
+}
+
+function cloudDeletePasswordHash(id) {
+  if (!id) return Promise.resolve();
+  return fetch(FIRESTORE_BASE + "/passwords/" + id + "?key=" + FIREBASE_API_KEY, { method: "DELETE" }).catch(function (e) {});
+}
+
 function portfolioStorageKey(id) {
   return id ? "stockSupporterPortfolio_" + id : "stockSupporterPortfolio";
 }
@@ -346,7 +369,11 @@ var state = {
   cashCurrency: "KRW",
   showAddStockForm: false,
   showAddCashForm: false,
-  portfolioSyncing: false
+  portfolioSyncing: false,
+  hasPassword: false,
+  showPasswordForm: false,
+  passwordFormError: "",
+  portfolioIdPasswordInput: ""
 };
 
 recordPortfolioSnapshot();
@@ -372,6 +399,10 @@ if (state.portfolioId) {
       try { localStorage.setItem(favoritesStorageKey(state.portfolioId), JSON.stringify(cloudFavorites)); } catch (e) {}
       render();
     }
+  });
+  cloudLoadPasswordHash(state.portfolioId).then(function (hash) {
+    state.hasPassword = !!hash;
+    render();
   });
 }
 
@@ -818,12 +849,50 @@ function removePortfolioHolding(ticker) {
 
 function confirmPortfolioId() {
   var input = document.getElementById("portfolio-id-input");
+  var pwInput = document.getElementById("portfolio-id-password-input");
   var id = input ? input.value.trim() : "";
+  var pw = pwInput ? pwInput.value.trim() : "";
   if (!/^\d{4}$/.test(id)) {
     state.portfolioIdError = "ID는 숫자 4자리로 입력해주세요.";
     render();
     return;
   }
+  state.portfolioIdError = "";
+  state.portfolioSyncing = true;
+  render();
+
+  var targetHasPassword = false;
+  cloudLoadPasswordHash(id).then(function (hash) {
+    if (!hash) return true;
+    targetHasPassword = true;
+    if (!pw) {
+      state.portfolioIdError = "이 ID는 비밀번호가 설정되어 있습니다. 비밀번호를 입력해주세요.";
+      return false;
+    }
+    return sha256Hex(pw).then(function (pwHash) {
+      if (pwHash !== hash) {
+        state.portfolioIdError = "비밀번호가 틀렸습니다.";
+        return false;
+      }
+      return true;
+    });
+  }).then(function (ok) {
+    if (!ok) {
+      state.portfolioSyncing = false;
+      render();
+      return;
+    }
+    state.hasPassword = targetHasPassword;
+    proceedWithPortfolioIdSwitch(id);
+  }).catch(function (e) {
+    // 네트워크 오류 시에도 비밀번호 확인 없이는 진행하지 않는다
+    state.portfolioSyncing = false;
+    state.portfolioIdError = "비밀번호 확인 중 오류가 발생했습니다. 다시 시도해주세요.";
+    render();
+  });
+}
+
+function proceedWithPortfolioIdSwitch(id) {
   state.portfolioId = id;
   savePortfolioId(id);
   state.portfolio = loadPortfolio(id);
@@ -832,8 +901,6 @@ function confirmPortfolioId() {
   state.portfolioIdError = "";
   render();
 
-  state.portfolioSyncing = true;
-  render();
   cloudLoadPortfolio(id).then(function (cloudData) {
     if (cloudData) {
       // 클라우드에 이미 저장된 데이터가 있으면 그것을 최신으로 보고 반영
@@ -860,6 +927,39 @@ function confirmPortfolioId() {
     }
   }).catch(function (e) { /* 무시: 로컬 데이터로 계속 사용 */ }).then(function () {
     state.portfolioSyncing = false;
+    render();
+  });
+}
+
+function savePasswordForm() {
+  var v1Input = document.getElementById("password-new-input");
+  var v2Input = document.getElementById("password-confirm-input");
+  var v1 = v1Input ? v1Input.value.trim() : "";
+  var v2 = v2Input ? v2Input.value.trim() : "";
+  if (!/^\d{4}$/.test(v1) || !/^\d{4}$/.test(v2)) {
+    state.passwordFormError = "숫자 4자리로 입력해주세요.";
+    render();
+    return;
+  }
+  if (v1 !== v2) {
+    state.passwordFormError = "두 값이 일치하지 않습니다.";
+    render();
+    return;
+  }
+  if (v1 === "0000") {
+    cloudDeletePasswordHash(state.portfolioId).then(function () {
+      state.hasPassword = false;
+      state.showPasswordForm = false;
+      state.passwordFormError = "";
+      render();
+    });
+    return;
+  }
+  sha256Hex(v1).then(function (hash) {
+    cloudSavePasswordHash(state.portfolioId, hash);
+    state.hasPassword = true;
+    state.showPasswordForm = false;
+    state.passwordFormError = "";
     render();
   });
 }
@@ -1127,6 +1227,7 @@ function portfolioPageHtml() {
         '<input type="text" id="portfolio-id-input" placeholder="숫자 4자리 (예: 0000)" maxlength="4" inputmode="numeric" value="' + esc(state.portfolioIdInput) + '" style="flex:1;min-width:0;box-sizing:border-box">' +
         '<button data-action="confirm-portfolio-id" style="padding:0 14px;border-radius:8px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:12px">확인</button>' +
       '</div>' +
+      '<input type="password" id="portfolio-id-password-input" placeholder="비밀번호 (설정되어 있는 경우만 입력)" maxlength="4" inputmode="numeric" value="' + esc(state.portfolioIdPasswordInput) + '" style="width:100%;box-sizing:border-box;margin-top:6px">' +
       (state.portfolioIdError ? '<div style="font-size:11px;color:#E24B4A;margin-top:6px">' + esc(state.portfolioIdError) + '</div>' : "") +
     '</div>';
 
@@ -1135,9 +1236,10 @@ function portfolioPageHtml() {
         '<div style="background:#1B1F26;border:1px solid #2A2F38;border-radius:10px;padding:10px 12px;margin-bottom:12px">' +
           '<div style="display:flex;align-items:center;justify-content:space-between">' +
             '<div style="font-size:12px;color:#8B93A1">포트폴리오 ID <span style="color:#F5F6F8;font-weight:600">' + esc(state.portfolioId) + '</span>' + (state.portfolioSyncing ? ' <span style="color:#5B6270">· 동기화 중...</span>' : ' <span style="color:#4C8DFF">· 클라우드 연결됨</span>') + '</div>' +
-            '<div style="display:flex;gap:6px">' +
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
               '<button data-action="toggle-portfolio-history" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">' + (state.showPortfolioHistory ? "추이 닫기" : "자산 추이") + '</button>' +
               '<button data-action="toggle-portfolio-id-form" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">ID 변경</button>' +
+              '<button data-action="open-password-form" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">' + (state.hasPassword ? "비밀번호 변경/삭제" : "비밀번호 설정") + '</button>' +
             '</div>' +
           '</div>' +
           (state.showPortfolioIdForm ? idFormHtml : "") +
@@ -1362,6 +1464,24 @@ function portfolioEditModalHtml() {
         '</div>' +
         fieldsHtml +
         '<button data-action="save-portfolio-edit" style="width:100%;padding:10px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13px">저장</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function passwordFormHtml() {
+  return (
+    '<div class="modal-backdrop" data-action="close-password-form">' +
+      '<div class="modal-sheet" data-action="stop" style="max-width:360px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+          '<div style="font-size:17px;font-weight:700;color:#F5F6F8">' + (state.hasPassword ? "비밀번호 변경/삭제" : "비밀번호 설정") + '</div>' +
+          '<button class="close-btn" data-action="close-password-form">&times;</button>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#8B93A1;margin-bottom:12px;line-height:1.6">숫자 4자리로 설정합니다. 설정하면 이 ID로 들어올 때 비밀번호도 함께 입력해야 합니다.' + (state.hasPassword ? ' 삭제하려면 두 칸 모두 0000을 입력하세요.' : '') + '</div>' +
+        '<input type="password" id="password-new-input" placeholder="비밀번호 설정" maxlength="4" inputmode="numeric" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
+        '<input type="password" id="password-confirm-input" placeholder="비밀번호 재입력" maxlength="4" inputmode="numeric" style="width:100%;box-sizing:border-box">' +
+        (state.passwordFormError ? '<div style="font-size:11px;color:#E24B4A;margin-top:8px">' + esc(state.passwordFormError) + '</div>' : "") +
+        '<button data-action="save-password" style="width:100%;padding:10px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13px;margin-top:12px">저장</button>' +
       '</div>' +
     '</div>'
   );
@@ -1635,6 +1755,8 @@ function render() {
     modalHtml = portfolioDetailModalHtml();
   } else if (state.editingTicker) {
     modalHtml = portfolioEditModalHtml();
+  } else if (state.showPasswordForm) {
+    modalHtml = passwordFormHtml();
   }
   var uploadHtml = state.showUpload ? uploadModalHtml() : "";
   var gaugeSectionHtml = state.page === 0 ? '<div style="padding:10px 16px 0">' + gaugeHtml(fgScore) + '</div>' : "";
@@ -1962,6 +2084,14 @@ document.addEventListener("click", function (e) {
     render();
   } else if (action === "confirm-portfolio-id") {
     confirmPortfolioId();
+  } else if (action === "open-password-form") {
+    state.showPasswordForm = true;
+    state.passwordFormError = "";
+    render();
+  } else if (action === "close-password-form") {
+    if (e.target === el) { state.showPasswordForm = false; render(); }
+  } else if (action === "save-password") {
+    savePasswordForm();
   } else if (action === "stop") {
     e.stopPropagation();
   }
