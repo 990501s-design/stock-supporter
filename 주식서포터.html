@@ -934,25 +934,20 @@ function proceedWithPortfolioIdSwitch(id) {
 function savePasswordForm() {
   var v1Input = document.getElementById("password-new-input");
   var v2Input = document.getElementById("password-confirm-input");
-  var v1 = v1Input ? v1Input.value.trim() : "";
-  var v2 = v2Input ? v2Input.value.trim() : "";
-  if (!/^\d{4}$/.test(v1) || !/^\d{4}$/.test(v2)) {
-    state.passwordFormError = "숫자 4자리로 입력해주세요.";
-    render();
-    return;
-  }
-  if (v1 !== v2) {
-    state.passwordFormError = "두 값이 일치하지 않습니다.";
-    render();
-    return;
-  }
-  if (v1 === "0000") {
+  var v1 = v1Input ? v1Input.value : "";
+  var v2 = v2Input ? v2Input.value : "";
+  if (v1 === "" && v2 === "") {
     cloudDeletePasswordHash(state.portfolioId).then(function () {
       state.hasPassword = false;
       state.showPasswordForm = false;
       state.passwordFormError = "";
       render();
     });
+    return;
+  }
+  if (v1 !== v2) {
+    state.passwordFormError = "두 값이 일치하지 않습니다.";
+    render();
     return;
   }
   sha256Hex(v1).then(function (hash) {
@@ -1227,7 +1222,7 @@ function portfolioPageHtml() {
         '<input type="text" id="portfolio-id-input" placeholder="숫자 4자리 (예: 0000)" maxlength="4" inputmode="numeric" value="' + esc(state.portfolioIdInput) + '" style="flex:1;min-width:0;box-sizing:border-box">' +
         '<button data-action="confirm-portfolio-id" style="padding:0 14px;border-radius:8px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:12px">확인</button>' +
       '</div>' +
-      '<input type="password" id="portfolio-id-password-input" placeholder="비밀번호 (설정되어 있는 경우만 입력)" maxlength="4" inputmode="numeric" value="' + esc(state.portfolioIdPasswordInput) + '" style="width:100%;box-sizing:border-box;margin-top:6px">' +
+      '<input type="password" id="portfolio-id-password-input" placeholder="비밀번호 (설정되어 있는 경우만 입력)" value="' + esc(state.portfolioIdPasswordInput) + '" style="width:100%;box-sizing:border-box;margin-top:6px">' +
       (state.portfolioIdError ? '<div style="font-size:11px;color:#E24B4A;margin-top:6px">' + esc(state.portfolioIdError) + '</div>' : "") +
     '</div>';
 
@@ -1477,9 +1472,9 @@ function passwordFormHtml() {
           '<div style="font-size:17px;font-weight:700;color:#F5F6F8">' + (state.hasPassword ? "비밀번호 변경/삭제" : "비밀번호 설정") + '</div>' +
           '<button class="close-btn" data-action="close-password-form">&times;</button>' +
         '</div>' +
-        '<div style="font-size:12px;color:#8B93A1;margin-bottom:12px;line-height:1.6">숫자 4자리로 설정합니다. 설정하면 이 ID로 들어올 때 비밀번호도 함께 입력해야 합니다.' + (state.hasPassword ? ' 삭제하려면 두 칸 모두 0000을 입력하세요.' : '') + '</div>' +
-        '<input type="password" id="password-new-input" placeholder="비밀번호 설정" maxlength="4" inputmode="numeric" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
-        '<input type="password" id="password-confirm-input" placeholder="비밀번호 재입력" maxlength="4" inputmode="numeric" style="width:100%;box-sizing:border-box">' +
+        '<div style="font-size:12px;color:#8B93A1;margin-bottom:12px;line-height:1.6">영문·숫자·특수문자 자유롭게, 원하는 길이로 설정합니다. 설정하면 이 ID로 들어올 때 비밀번호도 함께 입력해야 합니다.' + (state.hasPassword ? ' 삭제하려면 두 칸을 모두 비워둔 채 저장을 누르세요.' : '') + '</div>' +
+        '<input type="password" id="password-new-input" placeholder="비밀번호 설정" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
+        '<input type="password" id="password-confirm-input" placeholder="비밀번호 재입력" style="width:100%;box-sizing:border-box">' +
         (state.passwordFormError ? '<div style="font-size:11px;color:#E24B4A;margin-top:8px">' + esc(state.passwordFormError) + '</div>' : "") +
         '<button data-action="save-password" style="width:100%;padding:10px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13px;margin-top:12px">저장</button>' +
       '</div>' +
