@@ -441,26 +441,38 @@ def build_ticker_result(closes, extended_price=None):
     }
 
 
-def fetch_extended_prices(yahoo_tickers):
+def fetch_extended_prices(yahoo_tickers, max_attempts=3):
     """1분봉 + prepost=True 로 프리마켓/애프터마켓을 포함한 가장 최근 실시간 체결가를 가져옴.
-    (일봉 데이터는 prepost 옵션이 적용되지 않아 정규장 시간외 가격 변동이 반영되지 않는다)"""
-    try:
-        data = yf.download(
-            yahoo_tickers, period="1d", interval="1m",
-            group_by="ticker", threads=True, progress=False,
-            auto_adjust=True, prepost=True,
-        )
-    except Exception as e:
-        print(f"  ⚠️ 프리/애프터마켓 실시간가 조회 실패: {e}")
-        return {}
+    (일봉 데이터는 prepost 옵션이 적용되지 않아 정규장 시간외 가격 변동이 반영되지 않는다)
+    대량 티커를 한 번에 스레드로 조회하면 야후 쪽 rate-limit으로 일부 티커가 간헐적으로
+    누락되는 경우가 있어(TypeError 등), 누락된 티커만 모아 최대 max_attempts번 재시도한다."""
     result = {}
-    for t in yahoo_tickers:
+    remaining = list(yahoo_tickers)
+    for attempt in range(max_attempts):
+        if not remaining:
+            break
         try:
-            closes = (data["Close"] if len(yahoo_tickers) == 1 else data[t]["Close"]).dropna()
-            if not closes.empty:
-                result[t] = float(closes.iloc[-1])
-        except Exception:
+            data = yf.download(
+                remaining, period="1d", interval="1m",
+                group_by="ticker", threads=True, progress=False,
+                auto_adjust=True, prepost=True,
+            )
+        except Exception as e:
+            print(f"  ⚠️ 프리/애프터마켓 실시간가 조회 실패(시도 {attempt + 1}/{max_attempts}): {e}")
             continue
+        newly_failed = []
+        for t in remaining:
+            try:
+                closes = (data["Close"] if len(remaining) == 1 else data[t]["Close"]).dropna()
+                if not closes.empty:
+                    result[t] = float(closes.iloc[-1])
+                else:
+                    newly_failed.append(t)
+            except Exception:
+                newly_failed.append(t)
+        remaining = newly_failed
+    if remaining:
+        print(f"  ⚠️ 프리/애프터마켓 실시간가 조회 실패({len(remaining)}개, 일봉 종가로 대체): {', '.join(remaining)}")
     return result
 
 
