@@ -431,7 +431,7 @@ def fetch_all(yahoo_tickers):
     data = yf.download(
         yahoo_tickers, period=HIST_FETCH_PERIOD, interval="1d",
         group_by="ticker", threads=True, progress=False,
-        auto_adjust=True,
+        auto_adjust=True, prepost=True,
     )
     results = {}
     for t in yahoo_tickers:
@@ -451,7 +451,7 @@ def fetch_all(yahoo_tickers):
     failed = [t for t, v in results.items() if v is None]
     for t in failed:
         try:
-            hist = yf.Ticker(t).history(period=HIST_FETCH_PERIOD, interval="1d", auto_adjust=True)
+            hist = yf.Ticker(t).history(period=HIST_FETCH_PERIOD, interval="1d", auto_adjust=True, prepost=True)
             closes = hist["Close"].dropna()
             if closes.empty:
                 print(f"  ⚠️ '{t}' 데이터 없음")

@@ -1179,6 +1179,9 @@ function portfolioGroupHtml(rows, label, isKR) {
   var rowsHtml = sortedRows.map(function (r) {
     var allocPct = totalValue > 0 ? (r.marketValue / totalValue) * 100 : 0;
     var profitColor = r.profit >= 0 ? "#E24B4A" : "#4C8DFF";
+    var profitAmountDisp = isKR
+      ? (r.profit >= 0 ? "+" : "") + Math.round(r.profit).toLocaleString() + '원'
+      : (r.profit >= 0 ? "+$" : "-$") + fmtUsdNum(Math.abs(r.profit));
     var es = enrich(r.stock);
     var valuationHtml = (!r.isCash && es.hasValuation)
       ? '<div style="font-size:11px;color:#5B6270;margin-top:2px">적정가 ' + fmtMoney(es.fairPrice, isKR) + ' · 목표가 ' + fmtMoney(es.targetPrice, isKR) + '</div>'
@@ -1199,7 +1202,7 @@ function portfolioGroupHtml(rows, label, isKR) {
         '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
           '<div style="font-size:13.5px;font-weight:600;color:#F5F6F8">' + fmtMoney(r.marketValue, isKR) + '</div>' +
-          '<div style="font-size:12px;color:' + profitColor + '">' + fmtPct(r.profitPct) + ' (' + fmtMoney(r.profit, isKR) + ')</div>' +
+          '<div style="font-size:12px;color:' + profitColor + '">' + profitAmountDisp + ' (' + fmtPct(r.profitPct) + ')</div>' +
         '</div>' +
         '<div style="margin-top:7px;height:5px;background:#22262E;border-radius:3px;overflow:hidden">' +
           '<div style="width:' + allocPct.toFixed(1) + '%;height:100%;background:#4C8DFF"></div>' +
