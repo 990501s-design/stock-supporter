@@ -257,6 +257,49 @@ def load_existing_etf_holdings(html_text):
 
 
 NAVER_ETF_URL = "https://finance.naver.com/item/main.naver?code={code}"
+NAVER_REALTIME_URL = "https://polling.finance.naver.com/api/realtime/domestic/stock/{code}"
+
+
+def fetch_naver_realtime(kr_code):
+    """네이버금융 실시간 시세 API에서 국내 종목의 현재가/등락률을 가져옴.
+    야후 파이낸스는 국내(KRX) 종목의 장중 데이터가 지연되거나 전일 종가로
+    멈춰있는 경우가 많아, 국내 종목은 이 값으로 가격/등락률을 덮어쓴다."""
+    try:
+        res = requests.get(
+            NAVER_REALTIME_URL.format(code=kr_code),
+            timeout=10,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        res.raise_for_status()
+        d = res.json()["datas"][0]
+        price = float(d["closePriceRaw"])
+        pct = abs(float(d["fluctuationsRatioRaw"]))
+        dir_code = d["compareToPreviousPrice"]["code"]
+        if dir_code in ("4", "5"):
+            pct = -pct
+        elif dir_code == "3":
+            pct = 0.0
+        return {"price": price, "changePct": pct}
+    except Exception as e:
+        print(f"  ⚠️ 네이버 실시간 시세({kr_code}) 조회 실패: {e}")
+        return None
+
+
+def fetch_all_naver_realtime(mapping_rows):
+    """매핑 파일의 국내(KR) 종목 전체에 대해 네이버 실시간 시세를 조회
+    (original_ticker는 종목명(한글)인 경우가 많아, yahoo_ticker에서 6자리 코드를 뽑아 조회한다)"""
+    result = {}
+    for row in mapping_rows:
+        if row["market"].strip() != "KR":
+            continue
+        yahoo_ticker = row["yahoo_ticker"].strip()
+        if yahoo_ticker.startswith("^"):
+            continue  # 지수(코스피/코스닥)는 개별종목 시세 API 대상이 아니므로 제외
+        code = re.sub(r"\.(KS|KQ)$", "", yahoo_ticker)
+        q = fetch_naver_realtime(code)
+        if q is not None:
+            result[row["original_ticker"].strip()] = q
+    return result
 
 # 국내지수를 그대로 추종해 구성종목 비중이 사실상 동일한 것으로 볼 수 있는 경우,
 # 야후 파이낸스에 데이터가 있는 해외 ETF로 대체(근사)한다.
@@ -419,7 +462,8 @@ def fetch_all(yahoo_tickers):
     return results
 
 
-def build_seed_stocks(mapping_rows, fetched, fallback_map):
+def build_seed_stocks(mapping_rows, fetched, fallback_map, naver_quotes=None):
+    naver_quotes = naver_quotes or {}
     seed = []
     for i, row in enumerate(mapping_rows, start=1):
         yahoo_ticker = row["yahoo_ticker"].strip()
@@ -452,6 +496,10 @@ def build_seed_stocks(mapping_rows, fetched, fallback_map):
             price = 0
             rsi = 50
             change_pct = None
+
+        if market == "KR" and original_ticker in naver_quotes:
+            price = naver_quotes[original_ticker]["price"]
+            change_pct = naver_quotes[original_ticker]["changePct"]
 
         price = round_price(price, market)
         rsi = int(round(max(0, min(100, rsi))))
@@ -511,7 +559,9 @@ def main():
     etf_holdings_fallback = load_existing_etf_holdings(html_text)
 
     fetched = fetch_all(yahoo_tickers)
-    seed_stocks = build_seed_stocks(mapping_rows, fetched, fallback_map)
+    print("네이버금융 국내 종목 실시간 시세 조회 중...")
+    naver_quotes = fetch_all_naver_realtime(mapping_rows)
+    seed_stocks = build_seed_stocks(mapping_rows, fetched, fallback_map, naver_quotes)
     technical_data = build_technical_data(mapping_rows, fetched, technical_fallback)
     fear_greed = fetch_fear_greed(fear_greed_fallback)
     exchange_rate = fetch_exchange_rate(exchange_rate_fallback)
@@ -609,6 +659,8 @@ def main():
     if exchange_rate is not None:
         print(f"   원/달러 환율: {exchange_rate['usdKrw']}원 ({exchange_rate['asOf']} 기준)")
     print(f"   ETF 구성종목 데이터: {len(etf_holdings)}개 ETF")
+    kr_count = sum(1 for r in mapping_rows if r["market"].strip() == "KR")
+    print(f"   네이버 실시간 시세: {len(naver_quotes)}/{kr_count}개 국내 종목")
 
 
 if __name__ == "__main__":
