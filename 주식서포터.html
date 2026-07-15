@@ -2332,6 +2332,64 @@ document.addEventListener("input", function (e) {
 
 render();
 
+/* ------------------------------------------------------------------ */
+/* 실시간 데이터 동기화 (앱을 켜둔 상태에서 자동 갱신)                          */
+/* GitHub Actions가 5분마다 SEED_STOCKS 등을 갱신·배포하므로,                  */
+/* 화면이 보이는 동안 주기적으로 최신 HTML을 받아와 값만 교체하고 다시 렌더링한다.   */
+/* ------------------------------------------------------------------ */
+function syncLiveData() {
+  fetch(location.pathname + "?_=" + Date.now(), { cache: "no-store" })
+    .then(function (res) { return res.text(); })
+    .then(function (text) {
+      var changed = false;
+      var mSeed = text.match(/var SEED_STOCKS = (\[.*\]);/);
+      var mFg = text.match(/var FEAR_GREED_DATA = (\{.*?\});/);
+      var mHr = text.match(/var HISTORICAL_RETURNS = (\{.*?\});/);
+      var mTd = text.match(/var TECHNICAL_DATA = (\{.*?\});/);
+      var mEr = text.match(/var EXCHANGE_RATE = (\{.*?\});/);
+      var mEh = text.match(/var ETF_HOLDINGS = (\{.*?\});/);
+      try {
+        if (mSeed) {
+          var seed = JSON.parse(mSeed[1]);
+          if (JSON.stringify(seed) !== JSON.stringify(SEED_STOCKS)) { SEED_STOCKS = seed; changed = true; }
+        }
+        if (mFg) {
+          var fg = JSON.parse(mFg[1]);
+          if (JSON.stringify(fg) !== JSON.stringify(FEAR_GREED_DATA)) { FEAR_GREED_DATA = fg; changed = true; }
+        }
+        if (mHr) {
+          var hr = JSON.parse(mHr[1]);
+          if (JSON.stringify(hr) !== JSON.stringify(HISTORICAL_RETURNS)) { HISTORICAL_RETURNS = hr; changed = true; }
+        }
+        if (mTd) {
+          var td = JSON.parse(mTd[1]);
+          if (JSON.stringify(td) !== JSON.stringify(TECHNICAL_DATA)) { TECHNICAL_DATA = td; changed = true; }
+        }
+        if (mEr) {
+          var er = JSON.parse(mEr[1]);
+          if (JSON.stringify(er) !== JSON.stringify(EXCHANGE_RATE)) { EXCHANGE_RATE = er; changed = true; }
+        }
+        if (mEh) {
+          var eh = JSON.parse(mEh[1]);
+          if (JSON.stringify(eh) !== JSON.stringify(ETF_HOLDINGS)) { ETF_HOLDINGS = eh; changed = true; }
+        }
+      } catch (e) {
+        return;
+      }
+      if (changed) render();
+    })
+    .catch(function () {});
+}
+
+var LIVE_SYNC_INTERVAL_MS = 60000;
+setInterval(function () {
+  if (document.visibilityState === "visible") syncLiveData();
+}, LIVE_SYNC_INTERVAL_MS);
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "visible") syncLiveData();
+});
+window.addEventListener("online", syncLiveData);
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
     navigator.serviceWorker.register("sw.js").catch(function (e) {
