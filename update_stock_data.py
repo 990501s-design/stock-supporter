@@ -405,9 +405,25 @@ def calc_rsi(close_series, period=RSI_PERIOD):
     return float(val.iloc[-1])
 
 
-def build_ticker_result(closes):
-    price = float(closes.iloc[-1])
-    prev_close = float(closes.iloc[-2]) if len(closes) >= 2 else None
+def build_ticker_result(closes, extended_price=None):
+    """closes: 최근 6개월 일봉 종가. extended_price가 주어지면(프리/애프터마켓 실시간가)
+    이를 현재가로 쓰고, 아직 정규장 당일 봉이 생성되기 전(프리마켓)인지 여부를 날짜 비교로
+    판단해 등락률 기준(전일 종가)을 올바르게 잡는다."""
+    is_today = False
+    if extended_price is not None and len(closes) >= 1:
+        try:
+            last_date = closes.index[-1]
+            now_local = pd.Timestamp.now(tz=last_date.tz) if last_date.tz is not None else pd.Timestamp.now()
+            is_today = last_date.date() == now_local.date()
+        except Exception:
+            is_today = False
+
+    if extended_price is not None and len(closes) >= (2 if is_today else 1):
+        price = extended_price
+        prev_close = float(closes.iloc[-2]) if is_today else float(closes.iloc[-1])
+    else:
+        price = float(closes.iloc[-1])
+        prev_close = float(closes.iloc[-2]) if len(closes) >= 2 else None
     change_pct = ((price - prev_close) / prev_close * 100) if prev_close else None
     rsi = calc_rsi(closes)
     support, resistance = calc_support_resistance(closes, price)
@@ -425,14 +441,40 @@ def build_ticker_result(closes):
     }
 
 
+def fetch_extended_prices(yahoo_tickers):
+    """1분봉 + prepost=True 로 프리마켓/애프터마켓을 포함한 가장 최근 실시간 체결가를 가져옴.
+    (일봉 데이터는 prepost 옵션이 적용되지 않아 정규장 시간외 가격 변동이 반영되지 않는다)"""
+    try:
+        data = yf.download(
+            yahoo_tickers, period="1d", interval="1m",
+            group_by="ticker", threads=True, progress=False,
+            auto_adjust=True, prepost=True,
+        )
+    except Exception as e:
+        print(f"  ⚠️ 프리/애프터마켓 실시간가 조회 실패: {e}")
+        return {}
+    result = {}
+    for t in yahoo_tickers:
+        try:
+            closes = (data["Close"] if len(yahoo_tickers) == 1 else data[t]["Close"]).dropna()
+            if not closes.empty:
+                result[t] = float(closes.iloc[-1])
+        except Exception:
+            continue
+    return result
+
+
 def fetch_all(yahoo_tickers):
     """배치로 다운로드 (실패 종목은 개별 재시도)"""
     print(f"야후 파이낸스에서 {len(yahoo_tickers)}개 티커 데이터 수집 중...")
     data = yf.download(
         yahoo_tickers, period=HIST_FETCH_PERIOD, interval="1d",
         group_by="ticker", threads=True, progress=False,
-        auto_adjust=True, prepost=True,
+        auto_adjust=True,
     )
+    print("프리마켓/애프터마켓 실시간 가격 조회 중...")
+    extended_prices = fetch_extended_prices(yahoo_tickers)
+
     results = {}
     for t in yahoo_tickers:
         try:
@@ -443,7 +485,7 @@ def fetch_all(yahoo_tickers):
             if closes.empty:
                 results[t] = None
                 continue
-            results[t] = build_ticker_result(closes)
+            results[t] = build_ticker_result(closes, extended_prices.get(t))
         except Exception:
             results[t] = None
 
@@ -451,12 +493,12 @@ def fetch_all(yahoo_tickers):
     failed = [t for t, v in results.items() if v is None]
     for t in failed:
         try:
-            hist = yf.Ticker(t).history(period=HIST_FETCH_PERIOD, interval="1d", auto_adjust=True, prepost=True)
+            hist = yf.Ticker(t).history(period=HIST_FETCH_PERIOD, interval="1d", auto_adjust=True)
             closes = hist["Close"].dropna()
             if closes.empty:
                 print(f"  ⚠️ '{t}' 데이터 없음")
                 continue
-            results[t] = build_ticker_result(closes)
+            results[t] = build_ticker_result(closes, extended_prices.get(t))
         except Exception as e:
             print(f"  ⚠️ '{t}' 조회 실패: {e}")
     return results
