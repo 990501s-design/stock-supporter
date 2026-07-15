@@ -1,3 +1,4 @@
+# 5분마다 자동 갱신 (스케줄 재등록을 위한 트리거 커밋)
 name: Update Stock Data
 
 on:
