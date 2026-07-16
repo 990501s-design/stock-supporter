@@ -16,6 +16,7 @@ import csv
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import pandas as pd
@@ -300,6 +301,99 @@ def fetch_all_naver_realtime(mapping_rows):
         if q is not None:
             result[row["original_ticker"].strip()] = q
     return result
+
+
+NAVER_WORLDSTOCK_SEARCH_URL = "https://ac.stock.naver.com/ac?q={query}&target=stock"
+NAVER_WORLDSTOCK_URL = "https://api.stock.naver.com/stock/{code}/basic"
+
+
+def fetch_naver_worldstock_quote(yahoo_ticker):
+    """네이버금융 해외증시 검색 API로 정확한 종목 코드(reutersCode)를 찾은 뒤
+    실시간 가격/등락률을 가져옴. 표시용 데이터로 쓰지는 않고, 야후 파이낸스 데이터와
+    교차검증(더블체크)해 티커 오류/상장폐지 등으로 데이터가 크게 어긋나는 경우를
+    조기에 잡아내는 용도로만 사용한다."""
+    try:
+        res = requests.get(
+            NAVER_WORLDSTOCK_SEARCH_URL.format(query=yahoo_ticker),
+            timeout=8,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        res.raise_for_status()
+        items = res.json().get("items", [])
+        match = next(
+            (it for it in items if it.get("code") == yahoo_ticker and it.get("nationCode") == "USA"),
+            None,
+        )
+        if match is None:
+            return None
+        reuters_code = match["reutersCode"]
+    except Exception:
+        return None
+
+    try:
+        res = requests.get(
+            NAVER_WORLDSTOCK_URL.format(code=reuters_code),
+            timeout=8,
+            headers={"User-Agent": "Mozilla/5.0"},
+        )
+        res.raise_for_status()
+        d = res.json()
+        close_price = d.get("closePrice")
+        fluct_ratio = d.get("fluctuationsRatio")
+        if not close_price or fluct_ratio is None:
+            return None
+        price = float(str(close_price).replace(",", ""))
+        pct = float(fluct_ratio)
+        if d.get("compareToPreviousPrice", {}).get("code") in ("4", "5"):
+            pct = -abs(pct)
+        return {"price": price, "changePct": pct}
+    except Exception:
+        return None
+
+
+def fetch_all_naver_worldstock_quotes(mapping_rows):
+    """매핑 파일의 미국(US) 종목 전체에 대해 네이버 해외증시 실시간 시세를 조회
+    (야후 데이터와의 더블체크용)"""
+    us_tickers = [
+        r["yahoo_ticker"].strip()
+        for r in mapping_rows
+        if r["market"].strip() == "US" and r["yahoo_ticker"].strip()
+    ]
+    result = {}
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        future_to_ticker = {
+            executor.submit(fetch_naver_worldstock_quote, t): t for t in us_tickers
+        }
+        for future in as_completed(future_to_ticker):
+            t = future_to_ticker[future]
+            q = future.result()
+            if q is not None:
+                result[t] = q
+    return result
+
+
+def double_check_us_prices(mapping_rows, seed_stocks, naver_world_quotes, threshold_pct=3.0):
+    """미국 종목의 야후 데이터를 네이버 해외증시 시세와 비교해 가격 차이가 크면 경고 로그를 남김.
+    표시 데이터는 그대로 야후 기준을 사용하고, 이상 감지(티커 오류 등) 용도로만 사용한다."""
+    mismatches = []
+    for row, stock in zip(mapping_rows, seed_stocks):
+        if row["market"].strip() != "US":
+            continue
+        yahoo_ticker = row["yahoo_ticker"].strip()
+        naver_q = naver_world_quotes.get(yahoo_ticker)
+        if naver_q is None or not stock.get("price"):
+            continue
+        diff_pct = abs(stock["price"] - naver_q["price"]) / naver_q["price"] * 100
+        if diff_pct > threshold_pct:
+            mismatches.append((stock["ticker"], yahoo_ticker, stock["price"], naver_q["price"], diff_pct))
+    if mismatches:
+        print(f"  🚨 네이버 더블체크 불일치 {len(mismatches)}건 발견 (티커 오류/상장폐지 등 확인 필요):")
+        for ticker, yahoo_ticker, yahoo_price, naver_price, diff_pct in mismatches:
+            print(f"     - '{ticker}'({yahoo_ticker}) 야후={yahoo_price} vs 네이버={naver_price} (차이 {diff_pct:.1f}%)")
+    else:
+        print(f"  ✅ 네이버 더블체크: {len(naver_world_quotes)}개 미국 종목 야후 데이터와 큰 차이 없음")
+    return mismatches
+
 
 # 국내지수를 그대로 추종해 구성종목 비중이 사실상 동일한 것으로 볼 수 있는 경우,
 # 야후 파이낸스에 데이터가 있는 해외 ETF로 대체(근사)한다.
@@ -616,6 +710,9 @@ def main():
     print("네이버금융 국내 종목 실시간 시세 조회 중...")
     naver_quotes = fetch_all_naver_realtime(mapping_rows)
     seed_stocks = build_seed_stocks(mapping_rows, fetched, fallback_map, naver_quotes)
+    print("네이버금융 해외증시 실시간 시세 조회 중 (야후 데이터 더블체크용)...")
+    naver_world_quotes = fetch_all_naver_worldstock_quotes(mapping_rows)
+    double_check_us_prices(mapping_rows, seed_stocks, naver_world_quotes)
     technical_data = build_technical_data(mapping_rows, fetched, technical_fallback)
     fear_greed = fetch_fear_greed(fear_greed_fallback)
     exchange_rate = fetch_exchange_rate(exchange_rate_fallback)
@@ -715,6 +812,8 @@ def main():
     print(f"   ETF 구성종목 데이터: {len(etf_holdings)}개 ETF")
     kr_count = sum(1 for r in mapping_rows if r["market"].strip() == "KR")
     print(f"   네이버 실시간 시세: {len(naver_quotes)}/{kr_count}개 국내 종목")
+    us_count = sum(1 for r in mapping_rows if r["market"].strip() == "US")
+    print(f"   네이버 해외증시 더블체크: {len(naver_world_quotes)}/{us_count}개 미국 종목")
 
 
 if __name__ == "__main__":
