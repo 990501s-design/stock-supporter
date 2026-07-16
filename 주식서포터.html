@@ -2363,7 +2363,23 @@ function syncLiveData() {
       try {
         if (mSeed) {
           var seed = JSON.parse(mSeed[1]);
-          if (JSON.stringify(seed) !== JSON.stringify(SEED_STOCKS)) { SEED_STOCKS = seed; changed = true; }
+          if (JSON.stringify(seed) !== JSON.stringify(SEED_STOCKS)) {
+            SEED_STOCKS = seed;
+            // state.stocks는 최초 로드 시 SEED_STOCKS를 복사해 만든 별도 배열이라
+            // (포트폴리오 업로드로 사용자가 수정한 name/theme/fairPrice/targetPrice/note를
+            // 보존해야 하므로 통째로 덮어쓰지 않고) 시세 관련 필드만 골라 갱신한다.
+            var freshByTicker = {};
+            seed.forEach(function (s) { freshByTicker[s.ticker] = s; });
+            state.stocks.forEach(function (s) {
+              var fresh = freshByTicker[s.ticker];
+              if (fresh) {
+                s.price = fresh.price;
+                s.changePct = fresh.changePct;
+                s.rsi = fresh.rsi;
+              }
+            });
+            changed = true;
+          }
         }
         if (mFg) {
           var fg = JSON.parse(mFg[1]);
@@ -2445,11 +2461,9 @@ window.addEventListener("online", syncLiveData);
       refreshing = true;
       setPull(THRESHOLD, true);
       spinner.classList.add("ptr-spin");
-      syncLiveData().finally(function () {
-        refreshing = false;
-        spinner.classList.remove("ptr-spin");
-        setPull(0, true);
-      });
+      // 당겨서 새로고침은 시세뿐 아니라 앱 코드 자체의 업데이트(새 기능 등)까지
+      // 전부 반영해야 하므로 데이터만 병합하지 않고 페이지를 완전히 새로 불러온다.
+      location.reload();
     } else {
       setPull(0, true);
     }
