@@ -282,6 +282,16 @@ function cloudLoadTradeLog(id) {
   return firestoreGet("tradeLogs", id);
 }
 
+function cloudSaveTradeAnchors(id, tradeAnchors) {
+  if (!id) return;
+  firestoreSet("tradeAnchors", id, tradeAnchors);
+}
+
+function cloudLoadTradeAnchors(id) {
+  if (!id) return Promise.resolve(null);
+  return firestoreGet("tradeAnchors", id);
+}
+
 function cloudLoadPortfolio(id) {
   if (!id) return Promise.resolve(null);
   return firestoreGet("portfolios", id);
@@ -397,6 +407,25 @@ function saveTradeLog(tradeLog) {
   cloudSaveTradeLog(state.portfolioId, tradeLog);
 }
 
+function tradeAnchorStorageKey(id) {
+  return id ? "stockSupporterTradeAnchors_" + id : "stockSupporterTradeAnchors";
+}
+
+function loadTradeAnchors(id) {
+  try {
+    return JSON.parse(localStorage.getItem(tradeAnchorStorageKey(id)) || "{}");
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveTradeAnchors(tradeAnchors) {
+  try {
+    localStorage.setItem(tradeAnchorStorageKey(state.portfolioId), JSON.stringify(tradeAnchors));
+  } catch (e) { /* localStorage 사용 불가 시 세션 내에서만 유지 */ }
+  cloudSaveTradeAnchors(state.portfolioId, tradeAnchors);
+}
+
 function loadPortfolioHistory(id) {
   try {
     return JSON.parse(localStorage.getItem(historyStorageKey(id)) || "[]");
@@ -469,7 +498,14 @@ var state = {
   tradeFormHighlightIndex: -1,
   tradeFormDate: "",
   tradeFormType: "buy",
+  tradeFormQty: "",
+  tradeFormPrice: "",
+  tradeFormMemo: "",
   tradeFormError: "",
+  editingTradeId: null,
+  tradeAnchors: loadTradeAnchors(loadPortfolioId()),
+  tradeCalendarMonth: todayIso().slice(0, 7),
+  tradeCalendarSelectedDate: null,
   portfolioIdInput: "",
   portfolioIdError: "",
   showPortfolioIdForm: false,
@@ -516,6 +552,13 @@ if (state.portfolioId) {
     if (cloudTradeLog) {
       state.tradeLog = cloudTradeLog;
       try { localStorage.setItem(tradeLogStorageKey(state.portfolioId), JSON.stringify(cloudTradeLog)); } catch (e) {}
+      render();
+    }
+  });
+  cloudLoadTradeAnchors(state.portfolioId).then(function (cloudTradeAnchors) {
+    if (cloudTradeAnchors) {
+      state.tradeAnchors = cloudTradeAnchors;
+      try { localStorage.setItem(tradeAnchorStorageKey(state.portfolioId), JSON.stringify(cloudTradeAnchors)); } catch (e) {}
       render();
     }
   });
@@ -1318,12 +1361,15 @@ function openTradeJournal() {
 function closeTradeJournal() {
   state.showTradeJournal = false;
   state.tradeFormOpen = false;
+  state.editingTradeId = null;
   render();
 }
 
 function toggleTradeForm() {
-  state.tradeFormOpen = !state.tradeFormOpen;
-  if (state.tradeFormOpen) {
+  var opening = !state.tradeFormOpen;
+  state.tradeFormOpen = opening;
+  if (opening) {
+    state.editingTradeId = null;
     var initTicker = state.portfolio[0] ? state.portfolio[0].ticker : "";
     var initStock = initTicker ? getStockOrCash(initTicker) : null;
     state.tradeFormTicker = initTicker;
@@ -1332,7 +1378,12 @@ function toggleTradeForm() {
     state.tradeFormHighlightIndex = -1;
     state.tradeFormDate = todayIso();
     state.tradeFormType = "buy";
+    state.tradeFormQty = "";
+    state.tradeFormPrice = "";
+    state.tradeFormMemo = "";
     state.tradeFormError = "";
+  } else {
+    state.editingTradeId = null;
   }
   render();
 }
@@ -1352,16 +1403,104 @@ function selectTradeFormTicker(ticker) {
   render();
 }
 
+function editTradeEntry(id) {
+  var entry = state.tradeLog.filter(function (t) { return String(t.id) === String(id); })[0];
+  if (!entry) return;
+  var stock = getStockOrCash(entry.ticker);
+  state.editingTradeId = entry.id;
+  state.tradeFormOpen = true;
+  state.tradeFormTicker = entry.ticker;
+  state.tradeFormTickerQuery = stock ? stock.name : entry.ticker;
+  state.tradeFormSuggestionsOpen = false;
+  state.tradeFormHighlightIndex = -1;
+  state.tradeFormDate = entry.date;
+  state.tradeFormType = entry.type;
+  state.tradeFormQty = String(entry.qty);
+  state.tradeFormPrice = String(entry.price);
+  state.tradeFormMemo = entry.memo || "";
+  state.tradeFormError = "";
+  render();
+}
+
+// 티커의 매매일지가 처음 생성될 때, 그 시점의 포트폴리오 보유수량/평단가를
+// "기준점(anchor)"으로 딱 한 번 저장해둔다. 이 기준점은 이후 매매일지를
+// 아무리 수정/삭제해도 바뀌지 않으며, 재계산은 항상 이 기준점부터 다시 시작한다.
+// (기존에 직접 입력했던 보유 종목을 안전하게 보존하기 위함)
+function ensureTradeAnchor(ticker) {
+  if (state.tradeAnchors[ticker]) return;
+  var existing = state.portfolio.filter(function (h) { return h.ticker === ticker; })[0];
+  state.tradeAnchors[ticker] = existing ? { qty: existing.qty, avgPrice: existing.avgPrice } : { qty: 0, avgPrice: 0 };
+}
+
+// 특정 티커의 매매일지 전체를 날짜순으로 재생(replay)해서 보유수량/평단가를
+// 다시 계산한다. 기준점(anchor)에서 시작해 매수는 가중평균으로, 매도는
+// 수량 차감 + 실현손익 계산으로 반영한다. 먼저 검증만 하는 dry-run을 돌려
+// 중간에 보유수량보다 많이 매도하는 모순이 없는지 확인한 뒤, 문제가 없을
+//때만 실제로 매매일지 항목과 포트폴리오를 반영한다.
+function recomputeTickerHolding(ticker) {
+  var anchor = state.tradeAnchors[ticker] || { qty: 0, avgPrice: 0 };
+  var entries = state.tradeLog.filter(function (t) { return t.ticker === ticker; }).slice().sort(function (a, b) {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0);
+  });
+
+  var qty = anchor.qty, avgPrice = anchor.avgPrice, i, t, totalQty;
+  for (i = 0; i < entries.length; i++) {
+    t = entries[i];
+    if (t.type === "buy") {
+      totalQty = qty + t.qty;
+      avgPrice = totalQty > 0 ? (qty * avgPrice + t.qty * t.price) / totalQty : 0;
+      qty = totalQty;
+    } else {
+      if (t.qty > qty + 1e-9) {
+        return { error: ticker + " 매도 수량이 그 시점까지의 보유수량을 초과합니다. 이전 거래 기록을 먼저 확인해주세요. (그 시점 보유: " + qty + ")" };
+      }
+      qty -= t.qty;
+      if (qty < 1e-9) qty = 0;
+    }
+  }
+
+  qty = anchor.qty;
+  avgPrice = anchor.avgPrice;
+  entries.forEach(function (t) {
+    t.preQty = qty;
+    t.preAvgPrice = avgPrice;
+    if (t.type === "buy") {
+      var tq = qty + t.qty;
+      avgPrice = tq > 0 ? (qty * avgPrice + t.qty * t.price) / tq : 0;
+      qty = tq;
+      delete t.realizedPL;
+    } else {
+      t.realizedPL = t.qty * (t.price - avgPrice);
+      qty -= t.qty;
+      if (qty < 1e-9) qty = 0;
+    }
+  });
+
+  var holdingIdx = -1;
+  for (i = 0; i < state.portfolio.length; i++) {
+    if (state.portfolio[i].ticker === ticker) { holdingIdx = i; break; }
+  }
+  if (qty > 1e-9) {
+    if (holdingIdx >= 0) {
+      state.portfolio[holdingIdx].qty = qty;
+      state.portfolio[holdingIdx].avgPrice = avgPrice;
+    } else {
+      state.portfolio.push({ ticker: ticker, qty: qty, avgPrice: avgPrice });
+    }
+  } else if (holdingIdx >= 0) {
+    state.portfolio.splice(holdingIdx, 1);
+  }
+
+  return { qty: qty, avgPrice: avgPrice };
+}
+
 function saveTradeEntry() {
   var ticker = state.tradeFormTicker;
-  var dateInput = document.getElementById("trade-date-input");
-  var qtyInput = document.getElementById("trade-qty-input");
-  var priceInput = document.getElementById("trade-price-input");
-  var memoInput = document.getElementById("trade-memo-input");
-  var date = dateInput ? dateInput.value : "";
-  var qty = parseFloat(qtyInput ? qtyInput.value : "");
-  var price = parseFloat(priceInput ? priceInput.value : "");
-  var memo = memoInput ? memoInput.value.trim() : "";
+  var date = state.tradeFormDate;
+  var qty = parseFloat(state.tradeFormQty);
+  var price = parseFloat(state.tradeFormPrice);
+  var memo = (state.tradeFormMemo || "").trim();
   var type = state.tradeFormType;
   var stock = getStockOrCash(ticker);
 
@@ -1371,41 +1510,80 @@ function saveTradeEntry() {
     return;
   }
 
-  var existing = state.portfolio.filter(function (h) { return h.ticker === ticker; })[0];
-  var entry = { id: Date.now() + Math.random(), ticker: ticker, date: date, type: type, qty: qty, price: price, memo: memo };
+  var isEdit = state.editingTradeId !== null && state.editingTradeId !== undefined;
+  var targetEntry = null;
+  var oldEntry = null;
+  var oldTicker = null;
 
-  if (type === "buy") {
-    if (existing) {
-      var totalQty = existing.qty + qty;
-      existing.avgPrice = (existing.qty * existing.avgPrice + qty * price) / totalQty;
-      existing.qty = totalQty;
-    } else {
-      state.portfolio.push({ ticker: ticker, qty: qty, avgPrice: price });
-    }
-  } else {
-    if (!existing || existing.qty < qty) {
-      state.tradeFormError = "보유수량보다 많이 매도할 수 없습니다. (현재 보유: " + (existing ? existing.qty : 0) + ")";
-      render();
-      return;
-    }
-    entry.realizedPL = qty * (price - existing.avgPrice);
-    existing.qty -= qty;
-    if (existing.qty <= 0) {
-      state.portfolio = state.portfolio.filter(function (h) { return h.ticker !== ticker; });
-    }
+  if (isEdit) {
+    targetEntry = state.tradeLog.filter(function (t) { return String(t.id) === String(state.editingTradeId); })[0];
+    isEdit = !!targetEntry;
   }
 
-  state.tradeLog.push(entry);
+  if (isEdit) {
+    oldEntry = Object.assign({}, targetEntry);
+    oldTicker = targetEntry.ticker;
+    targetEntry.ticker = ticker;
+    targetEntry.date = date;
+    targetEntry.type = type;
+    targetEntry.qty = qty;
+    targetEntry.price = price;
+    targetEntry.memo = memo;
+  } else {
+    targetEntry = { id: Date.now() + Math.random(), ticker: ticker, date: date, type: type, qty: qty, price: price, memo: memo };
+    state.tradeLog.push(targetEntry);
+  }
+
+  ensureTradeAnchor(ticker);
+  if (oldTicker && oldTicker !== ticker) ensureTradeAnchor(oldTicker);
+
+  var result = recomputeTickerHolding(ticker);
+  var result2 = (oldTicker && oldTicker !== ticker) ? recomputeTickerHolding(oldTicker) : null;
+  var error = (result && result.error) || (result2 && result2.error);
+
+  if (error) {
+    if (isEdit) {
+      Object.assign(targetEntry, oldEntry);
+    } else {
+      state.tradeLog = state.tradeLog.filter(function (t) { return t !== targetEntry; });
+    }
+    recomputeTickerHolding(ticker);
+    if (oldTicker && oldTicker !== ticker) recomputeTickerHolding(oldTicker);
+    state.tradeFormError = error;
+    render();
+    return;
+  }
+
   saveTradeLog(state.tradeLog);
+  saveTradeAnchors(state.tradeAnchors);
   savePortfolio(state.portfolio);
   state.tradeFormOpen = false;
   state.tradeFormError = "";
+  state.editingTradeId = null;
   render();
 }
 
 function removeTradeEntry(id) {
+  var entry = state.tradeLog.filter(function (t) { return String(t.id) === String(id); })[0];
+  if (!entry) return;
+  var ticker = entry.ticker;
+  var backup = state.tradeLog;
   state.tradeLog = state.tradeLog.filter(function (t) { return String(t.id) !== String(id); });
+  ensureTradeAnchor(ticker);
+  var result = recomputeTickerHolding(ticker);
+  if (result && result.error) {
+    state.tradeLog = backup;
+    recomputeTickerHolding(ticker);
+    window.alert("이 기록을 삭제하면 " + result.error);
+    return;
+  }
   saveTradeLog(state.tradeLog);
+  saveTradeAnchors(state.tradeAnchors);
+  savePortfolio(state.portfolio);
+  if (String(state.editingTradeId) === String(id)) {
+    state.editingTradeId = null;
+    state.tradeFormOpen = false;
+  }
   render();
 }
 
@@ -1460,6 +1638,7 @@ function proceedWithPortfolioIdSwitch(id) {
   state.portfolio = loadPortfolio(id);
   state.favorites = loadFavorites(id);
   state.tradeLog = loadTradeLog(id);
+  state.tradeAnchors = loadTradeAnchors(id);
   state.showPortfolioIdForm = false;
   state.portfolioIdError = "";
   render();
@@ -1488,6 +1667,15 @@ function proceedWithPortfolioIdSwitch(id) {
     } else {
       state.tradeLog = loadTradeLog(id);
       cloudSaveTradeLog(id, state.tradeLog);
+    }
+    return cloudLoadTradeAnchors(id);
+  }).then(function (cloudTradeAnchors) {
+    if (cloudTradeAnchors) {
+      state.tradeAnchors = cloudTradeAnchors;
+      try { localStorage.setItem(tradeAnchorStorageKey(id), JSON.stringify(cloudTradeAnchors)); } catch (e) {}
+    } else {
+      state.tradeAnchors = loadTradeAnchors(id);
+      cloudSaveTradeAnchors(id, state.tradeAnchors);
     }
     return cloudLoadFavorites(id);
   }).then(function (cloudFavorites) {
@@ -2143,6 +2331,121 @@ function addToPortfolioModalHtml() {
   );
 }
 
+function prevTradeCalendarMonth() {
+  var parts = state.tradeCalendarMonth.split("-");
+  var year = parseInt(parts[0], 10), month = parseInt(parts[1], 10) - 1;
+  if (month < 1) { month = 12; year -= 1; }
+  state.tradeCalendarMonth = year + "-" + (month < 10 ? "0" + month : String(month));
+  render();
+}
+
+function nextTradeCalendarMonth() {
+  var parts = state.tradeCalendarMonth.split("-");
+  var year = parseInt(parts[0], 10), month = parseInt(parts[1], 10) + 1;
+  if (month > 12) { month = 1; year += 1; }
+  state.tradeCalendarMonth = year + "-" + (month < 10 ? "0" + month : String(month));
+  render();
+}
+
+function selectTradeCalendarDate(date) {
+  state.tradeCalendarSelectedDate = (state.tradeCalendarSelectedDate === date) ? null : date;
+  render();
+}
+
+function tradeCalendarEntryRowHtml(t) {
+  var s = getStockOrCash(t.ticker);
+  var isKR = s ? s.market === "KR" : true;
+  var priceDisp = fmtMoney(t.price, isKR);
+  var typeColor = t.type === "buy" ? "#5DCAA5" : "#F0997B";
+  var realizedHtml = (t.type === "sell" && typeof t.realizedPL === "number")
+    ? '<span style="font-size:11.5px;font-weight:600;color:' + (t.realizedPL >= 0 ? "#E24B4A" : "#4C8DFF") + '">실현손익 ' + (t.realizedPL >= 0 ? "+" : "") + fmtMoney(t.realizedPL, isKR) + '</span>'
+    : "";
+  return (
+    '<div style="padding:14px 0;border-bottom:1px solid #22262E">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<div style="font-size:12.5px;color:#F5F6F8;font-weight:600">' + esc(s ? s.name : t.ticker) + ' <span style="color:#5B6270;font-weight:400">' + esc(t.date) + '</span></div>' +
+        '<div style="display:flex;gap:10px;align-items:center">' +
+          '<button data-action="edit-trade-entry" data-id="' + t.id + '" style="background:none;border:none;color:#4C8DFF;font-size:11.5px;cursor:pointer;padding:2px;font-weight:600">수정</button>' +
+          '<button data-action="remove-trade-entry" data-id="' + t.id + '" style="background:none;border:none;color:#5B6270;font-size:16px;cursor:pointer;padding:2px;line-height:1">&times;</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;flex-wrap:wrap;gap:4px">' +
+        '<span style="font-size:12px;font-weight:600;color:' + typeColor + '">' + (t.type === "buy" ? "매수" : "매도") + ' ' + t.qty + '주 · ' + priceDisp + '</span>' +
+        realizedHtml +
+      '</div>' +
+      (t.memo ? '<div style="font-size:11.5px;color:#8B93A1;margin-top:4px;line-height:1.5">' + esc(t.memo) + '</div>' : "") +
+    '</div>'
+  );
+}
+
+function tradeCalendarHtml() {
+  if (state.tradeLog.length === 0) {
+    return '<div style="text-align:center;color:#5B6270;font-size:12.5px;padding:32px 0">아직 기록된 거래가 없습니다.</div>';
+  }
+
+  var entriesByDate = {};
+  state.tradeLog.forEach(function (t) {
+    (entriesByDate[t.date] = entriesByDate[t.date] || []).push(t);
+  });
+
+  var parts = state.tradeCalendarMonth.split("-");
+  var year = parseInt(parts[0], 10), month = parseInt(parts[1], 10);
+  var firstWeekday = new Date(year, month - 1, 1).getDay();
+  var daysInMonth = new Date(year, month, 0).getDate();
+  var todayStr = todayIso();
+  var weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
+
+  var cellsHtml = "";
+  for (var i = 0; i < firstWeekday; i++) {
+    cellsHtml += '<div></div>';
+  }
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = year + "-" + (month < 10 ? "0" + month : month) + "-" + (d < 10 ? "0" + d : d);
+    var dayEntries = entriesByDate[dateStr] || [];
+    var hasEntries = dayEntries.length > 0;
+    var hasBuy = dayEntries.some(function (t) { return t.type === "buy"; });
+    var hasSell = dayEntries.some(function (t) { return t.type === "sell"; });
+    var isSelected = state.tradeCalendarSelectedDate === dateStr;
+    var isToday = dateStr === todayStr;
+    var dotHtml = hasEntries
+      ? '<div style="display:flex;gap:3px;justify-content:center;margin-top:3px">' +
+          (hasBuy ? '<span style="width:5px;height:5px;border-radius:50%;background:#5DCAA5;display:inline-block"></span>' : "") +
+          (hasSell ? '<span style="width:5px;height:5px;border-radius:50%;background:#F0997B;display:inline-block"></span>' : "") +
+        '</div>'
+      : "";
+    cellsHtml +=
+      '<div data-action="select-trade-calendar-date" data-date="' + dateStr + '" style="cursor:pointer;text-align:center;padding:6px 0;border-radius:8px;background:' + (isSelected ? "#4C8DFF" : "transparent") + ';border:1px solid ' + (isToday && !isSelected ? "#2A2F38" : "transparent") + '">' +
+        '<div style="font-size:12px;color:' + (isSelected ? "#fff" : "#F5F6F8") + ';font-weight:' + (isToday ? "700" : "400") + '">' + d + '</div>' +
+        dotHtml +
+      '</div>';
+  }
+
+  var selectedEntries = state.tradeCalendarSelectedDate ? (entriesByDate[state.tradeCalendarSelectedDate] || []) : [];
+  var detailHtml = state.tradeCalendarSelectedDate
+    ? (
+        '<div style="margin-top:14px;border-top:1px solid #22262E;padding-top:12px">' +
+          '<div style="font-size:12.5px;color:#8B93A1;margin-bottom:4px;font-weight:600">' + esc(state.tradeCalendarSelectedDate) + '</div>' +
+          (selectedEntries.length > 0 ? selectedEntries.map(tradeCalendarEntryRowHtml).join("") : '<div style="text-align:center;color:#5B6270;font-size:12px;padding:16px 0">이 날짜에 기록된 거래가 없습니다.</div>') +
+        '</div>'
+      )
+    : '<div style="text-align:center;color:#5B6270;font-size:11.5px;padding:12px 0">날짜를 눌러 그날의 기록을 확인하세요.</div>';
+
+  return (
+    '<div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+        '<button data-action="prev-trade-calendar-month" style="background:none;border:none;color:#8B93A1;font-size:16px;cursor:pointer;padding:4px 8px">&lsaquo;</button>' +
+        '<div style="font-size:13.5px;font-weight:600;color:#F5F6F8">' + year + '년 ' + month + '월</div>' +
+        '<button data-action="next-trade-calendar-month" style="background:none;border:none;color:#8B93A1;font-size:16px;cursor:pointer;padding:4px 8px">&rsaquo;</button>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px">' +
+        weekdayNames.map(function (w) { return '<div style="text-align:center;font-size:11px;color:#5B6270;padding:4px 0">' + w + '</div>'; }).join("") +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">' + cellsHtml + '</div>' +
+      detailHtml +
+    '</div>'
+  );
+}
+
 function tradeJournalModalHtml() {
   var krStocks = state.stocks.filter(function (s) { return s.market === "KR"; }).slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
   var usStocks = state.stocks.filter(function (s) { return s.market === "US"; }).slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
@@ -2190,41 +2493,16 @@ function tradeJournalModalHtml() {
         '<select id="trade-ticker-select" data-action="trade-ticker-select" style="width:100%;box-sizing:border-box;margin-bottom:14px;font-size:12.5px">' + tickerOptionsHtml + '</select>' +
         '<input type="date" id="trade-date-input" value="' + esc(state.tradeFormDate) + '" style="width:100%;box-sizing:border-box;margin-bottom:10px">' +
         '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-          '<input type="number" id="trade-qty-input" placeholder="수량" style="flex:1;min-width:0;box-sizing:border-box">' +
-          '<input type="number" id="trade-price-input" placeholder="가격" style="flex:1;min-width:0;box-sizing:border-box">' +
+          '<input type="number" id="trade-qty-input" placeholder="수량" value="' + esc(state.tradeFormQty) + '" style="flex:1;min-width:0;box-sizing:border-box">' +
+          '<input type="number" id="trade-price-input" placeholder="가격" value="' + esc(state.tradeFormPrice) + '" style="flex:1;min-width:0;box-sizing:border-box">' +
         '</div>' +
-        '<textarea id="trade-memo-input" placeholder="메모 (매수/매도 이유, 생각 등)" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;margin-bottom:10px"></textarea>' +
+        '<textarea id="trade-memo-input" placeholder="메모 (매수/매도 이유, 생각 등)" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;margin-bottom:10px">' + esc(state.tradeFormMemo) + '</textarea>' +
         (state.tradeFormError ? '<div style="font-size:11px;color:#E24B4A;margin-bottom:10px">' + esc(state.tradeFormError) + '</div>' : "") +
-        '<button data-action="save-trade-entry" style="width:100%;padding:12px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13.5px">기록 저장</button>' +
+        '<button data-action="save-trade-entry" style="width:100%;padding:12px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13.5px">' + (state.editingTradeId !== null ? "수정 저장" : "기록 저장") + '</button>' +
       '</div>';
   }
 
-  var entries = state.tradeLog.slice().sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
-
-  var entriesHtml = entries.length === 0
-    ? '<div style="text-align:center;color:#5B6270;font-size:12.5px;padding:32px 0">아직 기록된 거래가 없습니다.</div>'
-    : entries.map(function (t) {
-        var s = getStockOrCash(t.ticker);
-        var isKR = s ? s.market === "KR" : true;
-        var priceDisp = fmtMoney(t.price, isKR);
-        var typeColor = t.type === "buy" ? "#5DCAA5" : "#F0997B";
-        var realizedHtml = (t.type === "sell" && typeof t.realizedPL === "number")
-          ? '<span style="font-size:11.5px;font-weight:600;color:' + (t.realizedPL >= 0 ? "#E24B4A" : "#4C8DFF") + '">실현손익 ' + (t.realizedPL >= 0 ? "+" : "") + fmtMoney(t.realizedPL, isKR) + '</span>'
-          : "";
-        return (
-          '<div style="padding:14px 0;border-bottom:1px solid #22262E">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center">' +
-              '<div style="font-size:12.5px;color:#F5F6F8;font-weight:600">' + esc(s ? s.name : t.ticker) + ' <span style="color:#5B6270;font-weight:400">' + esc(t.date) + '</span></div>' +
-              '<button data-action="remove-trade-entry" data-id="' + t.id + '" style="background:none;border:none;color:#5B6270;font-size:16px;cursor:pointer;padding:2px;line-height:1">&times;</button>' +
-            '</div>' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;flex-wrap:wrap;gap:4px">' +
-              '<span style="font-size:12px;font-weight:600;color:' + typeColor + '">' + (t.type === "buy" ? "매수" : "매도") + ' ' + t.qty + '주 · ' + priceDisp + '</span>' +
-              realizedHtml +
-            '</div>' +
-            (t.memo ? '<div style="font-size:11.5px;color:#8B93A1;margin-top:4px;line-height:1.5">' + esc(t.memo) + '</div>' : "") +
-          '</div>'
-        );
-      }).join("");
+  var calendarHtml = tradeCalendarHtml();
 
   return (
     '<div class="modal-backdrop" data-action="close-trade-journal">' +
@@ -2233,10 +2511,10 @@ function tradeJournalModalHtml() {
           '<div style="font-size:17px;font-weight:700;color:#F5F6F8">\u{1F4DD} 매매일지</div>' +
           '<button class="close-btn" data-action="close-trade-journal">&times;</button>' +
         '</div>' +
-        '<div class="info-box" style="margin-bottom:18px">거래를 기록하면 매수는 보유수량·평단가에, 매도는 보유수량과 실현손익에 자동으로 반영됩니다.</div>' +
+        '<div class="info-box" style="margin-bottom:18px">거래를 기록하면 매수는 보유수량·평단가에, 매도는 보유수량과 실현손익에 자동으로 반영됩니다. 날짜를 눌러 그날의 기록을 확인·수정할 수 있어요.</div>' +
         '<button data-action="toggle-trade-form" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + (state.tradeFormOpen ? "#4C8DFF;background:#1B2436" : "#2A2F38;background:#1B1F26") + ';color:#F5F6F8;font-weight:600;cursor:pointer;font-size:13.5px;margin-bottom:18px">' + (state.tradeFormOpen ? "닫기" : "+ 거래 기록 추가") + '</button>' +
         formHtml +
-        entriesHtml +
+        calendarHtml +
       '</div>' +
     '</div>'
   );
@@ -2972,6 +3250,14 @@ document.addEventListener("click", function (e) {
     saveTradeEntry();
   } else if (action === "remove-trade-entry") {
     removeTradeEntry(el.getAttribute("data-id"));
+  } else if (action === "edit-trade-entry") {
+    editTradeEntry(el.getAttribute("data-id"));
+  } else if (action === "prev-trade-calendar-month") {
+    prevTradeCalendarMonth();
+  } else if (action === "next-trade-calendar-month") {
+    nextTradeCalendarMonth();
+  } else if (action === "select-trade-calendar-date") {
+    selectTradeCalendarDate(el.getAttribute("data-date"));
   } else if (action === "open-market-detail") {
     state.showMarketDetail = true;
     render();
@@ -2991,6 +3277,14 @@ document.addEventListener("input", function (e) {
     render();
   } else if (e.target.getAttribute("data-action") === "trade-ticker-select") {
     selectTradeFormTicker(e.target.value);
+  } else if (e.target.id === "trade-qty-input") {
+    state.tradeFormQty = e.target.value;
+  } else if (e.target.id === "trade-price-input") {
+    state.tradeFormPrice = e.target.value;
+  } else if (e.target.id === "trade-memo-input") {
+    state.tradeFormMemo = e.target.value;
+  } else if (e.target.id === "trade-date-input") {
+    state.tradeFormDate = e.target.value;
   }
 });
 
