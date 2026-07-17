@@ -460,10 +460,13 @@ var state = {
   portfolioId: loadPortfolioId(),
   portfolio: loadPortfolio(loadPortfolioId()),
   tradeLog: loadTradeLog(loadPortfolioId()),
+  showMarketDetail: false,
   showTradeJournal: false,
-  tradeJournalFilter: "",
   tradeFormOpen: false,
   tradeFormTicker: "",
+  tradeFormTickerQuery: "",
+  tradeFormSuggestionsOpen: false,
+  tradeFormHighlightIndex: -1,
   tradeFormDate: "",
   tradeFormType: "buy",
   tradeFormError: "",
@@ -580,6 +583,15 @@ function fgZone(score) {
   if (score >= 40) return { key: "neutral", label: "뉴트럴", sub: "중립", emoji: "\u{1F343}", color: "#888780" };
   if (score >= 20) return { key: "fear", label: "피어", sub: "사냥시즌", emoji: "\u{1F327}\uFE0F", color: "#1D9E75" };
   return { key: "extreme_fear", label: "익스트림 피어", sub: "공격적 사냥", emoji: "\u2744\uFE0F", color: "#378ADD" };
+}
+
+function vixZone(price) {
+  if (price === null || price === undefined) return null;
+  if (price < 12) return { label: "매우 안정적", desc: "변동성이 매우 낮은 구간입니다. 시장이 낙관적일 때 자주 나타납니다.", color: "#5DCAA5" };
+  if (price < 20) return { label: "안정적", desc: "평상시 수준의 변동성입니다. 특별한 경계 신호는 아닙니다.", color: "#5DCAA5" };
+  if (price < 25) return { label: "변동성 확대", desc: "평소보다 시장의 불안 심리가 다소 높아진 구간입니다.", color: "#E9C77A" };
+  if (price < 35) return { label: "높은 변동성 · 경계", desc: "투자심리가 불안정한 구간입니다. 리스크 관리가 필요합니다.", color: "#F0997B" };
+  return { label: "패닉 수준", desc: "극단적 공포 구간으로, 급락장 등 시장 충격 시 나타납니다.", color: "#E24B4A" };
 }
 
 function rsiBadgeHtml(rsi) {
@@ -759,16 +771,30 @@ function marketSummaryHtml() {
       '</div>';
   }
 
+  var vixCardHtml = "";
+  if (ms.vix) {
+    var vz = vixZone(ms.vix.price);
+    var vColor = (ms.vix.changePct === null || ms.vix.changePct === undefined) ? "#8B93A1" : (ms.vix.changePct >= 0 ? "#E24B4A" : "#4C8DFF");
+    vixCardHtml =
+      '<div style="background:#1B1F26;border-radius:12px;padding:11px 12px">' +
+        '<div style="font-size:11px;color:#8B93A1;margin-bottom:4px">VIX (변동성지수)</div>' +
+        '<div style="font-size:14.5px;font-weight:700;color:#F5F6F8">' + ms.vix.price.toFixed(2) + '</div>' +
+        (ms.vix.changePct !== null && ms.vix.changePct !== undefined
+          ? '<div style="font-size:11px;font-weight:600;color:' + vColor + ';margin-top:2px">' + fmtPct(ms.vix.changePct) + '</div>' : "") +
+        (vz ? '<div style="font-size:10.5px;font-weight:600;color:' + vz.color + ';margin-top:3px">' + vz.label + '</div>' : "") +
+      '</div>';
+  }
+
   var idx = ms.indices || {};
   return (
-    '<div class="card" style="padding:16px;margin-bottom:14px">' +
+    '<div class="card" data-action="open-market-detail" style="padding:16px;margin-bottom:14px;cursor:pointer">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
         '<div style="font-size:13px;font-weight:500;color:#B9C0CC">오늘의 시장</div>' +
         (ms.asOf ? '<div style="font-size:10.5px;color:#5B6270">' + esc(ms.asOf) + ' 기준</div>' : "") +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
         spreadHtml +
-        (ms.vix ? chCard("VIX (변동성지수)", ms.vix.price, ms.vix.changePct, 2) : "") +
+        vixCardHtml +
         (ms.oil ? chCard("WTI 유가($)", ms.oil.price, ms.oil.changePct, 2) : "") +
         (ms.dollarIndex ? chCard("달러인덱스(DXY)", ms.dollarIndex.price, ms.dollarIndex.changePct, 2) : "") +
       '</div>' +
@@ -779,6 +805,115 @@ function marketSummaryHtml() {
         (idx.kospi ? chCard("코스피", idx.kospi.price, idx.kospi.changePct, 0) : "") +
         (idx.nikkei ? chCard("니케이225", idx.nikkei.price, idx.nikkei.changePct, 0) : "") +
       '</div>' +
+      '<div style="text-align:center;font-size:11px;color:#5B6270;margin-top:12px">탭하여 상세 정보 · 차트 보기 &rarr;</div>' +
+    '</div>'
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 오늘의 시장 상세 모달 (차트 + 해석)                                       */
+/* ------------------------------------------------------------------ */
+function marketDetailMiniChart(hist, color) {
+  if (!hist || hist.length < 2) return "";
+  var w = 300, h = 70;
+  var min = Math.min.apply(null, hist), max = Math.max.apply(null, hist);
+  if (min === max) { min -= 1; max += 1; }
+  function x(i) { return (i / (hist.length - 1)) * w; }
+  function y(v) { return h - ((v - min) / (max - min)) * h; }
+  var points = hist.map(function (v, i) { return x(i).toFixed(1) + "," + y(v).toFixed(1); }).join(" ");
+  var lastX = x(hist.length - 1), lastY = y(hist[hist.length - 1]);
+  return (
+    '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" style="width:100%;height:56px;display:block;overflow:visible">' +
+      '<polyline points="' + points + '" fill="none" stroke="' + color + '" stroke-width="2" vector-effect="non-scaling-stroke" />' +
+      '<circle cx="' + lastX.toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="3" fill="' + color + '" />' +
+    '</svg>'
+  );
+}
+
+function marketDetailMetricBlock(opts) {
+  var hist = opts.hist;
+  var color = (opts.changePct === null || opts.changePct === undefined) ? "#8B93A1" : (opts.changePct >= 0 ? "#E24B4A" : "#4C8DFF");
+  var chartHtml = hist && hist.length >= 2 ? marketDetailMiniChart(hist, color) : '<div style="font-size:11px;color:#5B6270;padding:20px 0;text-align:center">차트 데이터는 다음 자동 갱신 시 제공됩니다.</div>';
+  var rangeHtml = "";
+  if (hist && hist.length >= 2) {
+    var hi = Math.max.apply(null, hist), lo = Math.min.apply(null, hist);
+    rangeHtml = '<div style="font-size:11px;color:#5B6270;margin-top:4px">최근 ' + hist.length + '거래일 범위 ' + lo.toFixed(2) + ' ~ ' + hi.toFixed(2) + '</div>';
+  }
+  return (
+    '<div style="background:#1B1F26;border-radius:12px;padding:14px;margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
+        '<div style="font-size:13px;font-weight:600;color:#F5F6F8">' + esc(opts.label) + '</div>' +
+        '<div style="display:flex;align-items:baseline;gap:6px">' +
+          '<span style="font-size:14.5px;font-weight:700;color:#F5F6F8">' + opts.priceStr + '</span>' +
+          (opts.changePct !== null && opts.changePct !== undefined ? '<span style="font-size:11.5px;font-weight:600;color:' + color + '">' + fmtPct(opts.changePct) + '</span>' : "") +
+        '</div>' +
+      '</div>' +
+      chartHtml +
+      rangeHtml +
+      (opts.extra || "") +
+    '</div>'
+  );
+}
+
+function marketDetailHtml() {
+  if (typeof MARKET_SUMMARY === "undefined" || !MARKET_SUMMARY) return "";
+  var ms = MARKET_SUMMARY;
+  var idx = ms.indices || {};
+
+  var blocksHtml = "";
+
+  if (ms.rateSpread) {
+    var inverted = ms.rateSpread.value < 0;
+    var spreadColor = inverted ? "#E9C77A" : "#5DCAA5";
+    blocksHtml +=
+      '<div style="background:#1B1F26;border-radius:12px;padding:14px;margin-bottom:12px">' +
+        '<div style="font-size:13px;font-weight:600;color:#F5F6F8;margin-bottom:6px">장단기 금리차 (' + esc(ms.rateSpread.label || "10Y-3M") + ')</div>' +
+        '<div style="font-size:16px;font-weight:700;color:' + spreadColor + '">' + (ms.rateSpread.value >= 0 ? "+" : "") + ms.rateSpread.value.toFixed(2) + '%p</div>' +
+        '<div style="font-size:12px;color:#8B93A1;margin-top:6px;line-height:1.5">' +
+          (inverted
+            ? "장단기 금리가 역전된 상태입니다. 역사적으로 경기침체 신호로 해석되는 경우가 많았지만, 시차가 있어 단기 매매 신호로 쓰기는 어렵습니다."
+            : "장단기 금리차가 정상(우상향) 상태입니다. 역전 상태보다는 경기침체 경고 신호가 약한 구간입니다.") +
+        '</div>' +
+      '</div>';
+  }
+
+  if (ms.vix) {
+    var vz = vixZone(ms.vix.price);
+    blocksHtml += marketDetailMetricBlock({
+      label: "VIX 변동성지수",
+      priceStr: ms.vix.price.toFixed(2),
+      changePct: ms.vix.changePct,
+      hist: ms.vix.hist,
+      extra: vz ? '<div style="font-size:12px;color:' + vz.color + ';font-weight:600;margin-top:8px">' + vz.label + '</div><div style="font-size:11.5px;color:#8B93A1;margin-top:3px;line-height:1.5">' + vz.desc + '</div>' : ""
+    });
+  }
+  if (ms.oil) {
+    blocksHtml += marketDetailMetricBlock({ label: "WTI 유가 ($/배럴)", priceStr: "$" + ms.oil.price.toFixed(2), changePct: ms.oil.changePct, hist: ms.oil.hist });
+  }
+  if (ms.dollarIndex) {
+    blocksHtml += marketDetailMetricBlock({ label: "달러인덱스 (DXY)", priceStr: ms.dollarIndex.price.toFixed(2), changePct: ms.dollarIndex.changePct, hist: ms.dollarIndex.hist });
+  }
+
+  var indexMeta = [
+    ["sp500", "S&P500"], ["nasdaq", "나스닥종합"], ["kospi", "코스피"], ["nikkei", "니케이225"]
+  ];
+  indexMeta.forEach(function (m) {
+    var d = idx[m[0]];
+    if (!d) return;
+    blocksHtml += marketDetailMetricBlock({ label: m[1], priceStr: d.price.toLocaleString(), changePct: d.changePct, hist: d.hist });
+  });
+
+  return (
+    '<div class="modal-backdrop" data-action="close-market-detail">' +
+      '<div class="modal-sheet" data-action="stop" style="max-width:520px;max-height:92vh">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+          '<div style="font-size:17px;font-weight:700;color:#F5F6F8">오늘의 시장 상세</div>' +
+          '<button class="close-btn" data-action="close-market-detail">&times;</button>' +
+        '</div>' +
+        (ms.asOf ? '<div style="font-size:11px;color:#5B6270;margin-bottom:14px">' + esc(ms.asOf) + ' 기준</div>' : "") +
+        blocksHtml +
+        '<div style="font-size:11px;color:#5B6270;line-height:1.6;margin-top:4px">본 정보는 투자 판단을 돕기 위한 참고 자료이며, 투자 결과에 대한 책임은 투자자 본인에게 있습니다.</div>' +
+      '</div>' +
     '</div>'
   );
 }
@@ -786,7 +921,7 @@ function marketSummaryHtml() {
 function themeSentimentHtml() {
   var themes = THEMES.filter(function (t) { return t !== "전체"; });
   var stats = themes.map(function (t) {
-    var list = state.stocks.filter(function (s) { return s.theme === t && s.changePct !== null && s.changePct !== undefined; });
+    var list = state.stocks.filter(function (s) { return s.theme === t && s.market === "US" && s.changePct !== null && s.changePct !== undefined; });
     if (list.length === 0) return null;
     var avg = list.reduce(function (sum, s) { return sum + s.changePct; }, 0) / list.length;
     return { theme: t, avg: avg };
@@ -812,7 +947,7 @@ function themeSentimentHtml() {
 
   return (
     '<div class="card" style="padding:16px;margin-bottom:14px">' +
-      '<div style="font-size:13px;font-weight:500;color:#B9C0CC;margin-bottom:10px">테마별 분위기</div>' +
+      '<div style="font-size:13px;font-weight:500;color:#B9C0CC;margin-bottom:10px">미국증시 테마별 분위기</div>' +
       rowsHtml +
     '</div>'
   );
@@ -1186,15 +1321,15 @@ function closeTradeJournal() {
   render();
 }
 
-function setTradeJournalFilter(ticker) {
-  state.tradeJournalFilter = ticker;
-  render();
-}
-
 function toggleTradeForm() {
   state.tradeFormOpen = !state.tradeFormOpen;
   if (state.tradeFormOpen) {
-    state.tradeFormTicker = state.tradeJournalFilter || (state.portfolio[0] ? state.portfolio[0].ticker : "");
+    var initTicker = state.portfolio[0] ? state.portfolio[0].ticker : "";
+    var initStock = initTicker ? getStockOrCash(initTicker) : null;
+    state.tradeFormTicker = initTicker;
+    state.tradeFormTickerQuery = initStock ? initStock.name : "";
+    state.tradeFormSuggestionsOpen = false;
+    state.tradeFormHighlightIndex = -1;
     state.tradeFormDate = todayIso();
     state.tradeFormType = "buy";
     state.tradeFormError = "";
@@ -1207,8 +1342,14 @@ function setTradeFormType(type) {
   render();
 }
 
-function setTradeFormTicker(ticker) {
+function selectTradeFormTicker(ticker) {
+  var stock = state.stocks.filter(function (s) { return s.ticker === ticker; })[0];
+  if (!stock) return;
   state.tradeFormTicker = ticker;
+  state.tradeFormTickerQuery = stock.name;
+  state.tradeFormSuggestionsOpen = false;
+  state.tradeFormHighlightIndex = -1;
+  render();
 }
 
 function saveTradeEntry() {
@@ -2006,47 +2147,62 @@ function tradeJournalModalHtml() {
   var krStocks = state.stocks.filter(function (s) { return s.market === "KR"; }).slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
   var usStocks = state.stocks.filter(function (s) { return s.market === "US"; }).slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
   var tickerOptionsHtml =
+    '<option value="">목록에서 선택...</option>' +
     '<optgroup label="국내">' + krStocks.map(function (s) { return '<option value="' + esc(s.ticker) + '"' + (s.ticker === state.tradeFormTicker ? " selected" : "") + '>' + esc(s.name) + '</option>'; }).join("") + '</optgroup>' +
     '<optgroup label="해외">' + usStocks.map(function (s) { return '<option value="' + esc(s.ticker) + '"' + (s.ticker === state.tradeFormTicker ? " selected" : "") + '>' + esc(s.name) + '</option>'; }).join("") + '</optgroup>';
 
-  var heldTickers = {};
-  state.portfolio.forEach(function (h) { if (h.ticker !== "CASH_KRW" && h.ticker !== "CASH_USD") heldTickers[h.ticker] = true; });
-  state.tradeLog.forEach(function (t) { heldTickers[t.ticker] = true; });
-  var filterTickers = Object.keys(heldTickers).map(function (t) { return getStockOrCash(t); }).filter(function (s) { return !!s; })
-    .sort(function (a, b) { return a.name.localeCompare(b.name); });
-
-  var filterChipsHtml =
-    '<button data-action="set-trade-journal-filter" data-ticker="" style="padding:5px 11px;border-radius:8px;border:1px solid ' + (state.tradeJournalFilter === "" ? "#4C8DFF" : "#2A2F38") + ';background:' + (state.tradeJournalFilter === "" ? "rgba(76,141,255,0.12)" : "#15181D") + ';color:' + (state.tradeJournalFilter === "" ? "#4C8DFF" : "#8B93A1") + ';font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">전체</button>' +
-    filterTickers.map(function (s) {
-      var active = state.tradeJournalFilter === s.ticker;
-      return '<button data-action="set-trade-journal-filter" data-ticker="' + esc(s.ticker) + '" style="padding:5px 11px;border-radius:8px;border:1px solid ' + (active ? "#4C8DFF" : "#2A2F38") + ';background:' + (active ? "rgba(76,141,255,0.12)" : "#15181D") + ';color:' + (active ? "#4C8DFF" : "#8B93A1") + ';font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">' + esc(s.name) + '</button>';
-    }).join("");
-
   var formHtml = "";
   if (state.tradeFormOpen) {
+    var query = state.tradeFormTickerQuery.trim().toLowerCase();
+    var suggestions = query ? state.stocks.filter(function (s) { return matchesSearch(s, query); }).slice(0, 8) : [];
+    var suggestionsHtml = "";
+    if (state.tradeFormSuggestionsOpen && suggestions.length > 0) {
+      suggestionsHtml =
+        '<div style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1B1F26;border:1px solid #2A2F38;border-radius:10px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,0.4)">' +
+          suggestions.map(function (s, idx) {
+            var isActive = idx === state.tradeFormHighlightIndex;
+            return (
+              '<div data-action="select-trade-ticker" data-ticker="' + esc(s.ticker) + '" style="padding:10px 12px;cursor:pointer;font-size:13px;color:#F5F6F8;border-bottom:1px solid #22262E;background:' + (isActive ? "#2A2F38" : "transparent") + '">' +
+                esc(s.name) + ' <span style="color:#5B6270;font-size:11px">' + esc(s.ticker) + '</span>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>';
+    }
+    var selectedStock = state.tradeFormTicker ? getStockOrCash(state.tradeFormTicker) : null;
+    var selectedBadgeHtml = selectedStock
+      ? '<div style="font-size:11.5px;color:#5DCAA5;margin-bottom:10px">선택됨: ' + esc(selectedStock.name) + ' (' + esc(selectedStock.ticker) + ')</div>'
+      : '<div style="font-size:11.5px;color:#E9C77A;margin-bottom:10px">종목을 검색하거나 목록에서 선택해주세요.</div>';
+
     formHtml =
-      '<div style="background:#1B1F26;border-radius:12px;padding:14px;margin-bottom:14px">' +
-        '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-          '<button data-action="set-trade-type" data-type="buy" style="flex:1;padding:8px;border-radius:8px;border:1px solid ' + (state.tradeFormType === "buy" ? "#1D9E75" : "#2A2F38") + ';background:' + (state.tradeFormType === "buy" ? "rgba(29,158,117,0.12)" : "#15181D") + ';color:' + (state.tradeFormType === "buy" ? "#5DCAA5" : "#8B93A1") + ';font-weight:600;font-size:13px;cursor:pointer">매수</button>' +
-          '<button data-action="set-trade-type" data-type="sell" style="flex:1;padding:8px;border-radius:8px;border:1px solid ' + (state.tradeFormType === "sell" ? "#E24B4A" : "#2A2F38") + ';background:' + (state.tradeFormType === "sell" ? "rgba(226,75,74,0.12)" : "#15181D") + ';color:' + (state.tradeFormType === "sell" ? "#F0997B" : "#8B93A1") + ';font-weight:600;font-size:13px;cursor:pointer">매도</button>' +
+      '<div style="background:#1B1F26;border-radius:14px;padding:18px;margin-bottom:18px">' +
+        '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+          '<button data-action="set-trade-type" data-type="buy" style="flex:1;padding:10px;border-radius:8px;border:1px solid ' + (state.tradeFormType === "buy" ? "#1D9E75" : "#2A2F38") + ';background:' + (state.tradeFormType === "buy" ? "rgba(29,158,117,0.12)" : "#15181D") + ';color:' + (state.tradeFormType === "buy" ? "#5DCAA5" : "#8B93A1") + ';font-weight:600;font-size:13px;cursor:pointer">매수</button>' +
+          '<button data-action="set-trade-type" data-type="sell" style="flex:1;padding:10px;border-radius:8px;border:1px solid ' + (state.tradeFormType === "sell" ? "#E24B4A" : "#2A2F38") + ';background:' + (state.tradeFormType === "sell" ? "rgba(226,75,74,0.12)" : "#15181D") + ';color:' + (state.tradeFormType === "sell" ? "#F0997B" : "#8B93A1") + ';font-weight:600;font-size:13px;cursor:pointer">매도</button>' +
         '</div>' +
-        '<select id="trade-ticker-select" data-action="trade-ticker-select" style="width:100%;box-sizing:border-box;margin-bottom:8px">' + tickerOptionsHtml + '</select>' +
-        '<input type="date" id="trade-date-input" value="' + esc(state.tradeFormDate) + '" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
-        '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+        '<div style="font-size:11.5px;color:#8B93A1;margin-bottom:6px">종목 검색 (티커 또는 기업이름)</div>' +
+        '<div style="position:relative;margin-bottom:6px">' +
+          '<input type="text" id="trade-ticker-search-input" placeholder="예: 삼성전자, AAPL, 애플" autocomplete="off" value="' + esc(state.tradeFormTickerQuery) + '" style="width:100%;box-sizing:border-box">' +
+          suggestionsHtml +
+        '</div>' +
+        selectedBadgeHtml +
+        '<div style="font-size:11px;color:#5B6270;margin-bottom:4px">또는 목록에서 선택</div>' +
+        '<select id="trade-ticker-select" data-action="trade-ticker-select" style="width:100%;box-sizing:border-box;margin-bottom:14px;font-size:12.5px">' + tickerOptionsHtml + '</select>' +
+        '<input type="date" id="trade-date-input" value="' + esc(state.tradeFormDate) + '" style="width:100%;box-sizing:border-box;margin-bottom:10px">' +
+        '<div style="display:flex;gap:8px;margin-bottom:10px">' +
           '<input type="number" id="trade-qty-input" placeholder="수량" style="flex:1;min-width:0;box-sizing:border-box">' +
           '<input type="number" id="trade-price-input" placeholder="가격" style="flex:1;min-width:0;box-sizing:border-box">' +
         '</div>' +
-        '<textarea id="trade-memo-input" placeholder="메모 (매수/매도 이유, 생각 등)" style="width:100%;box-sizing:border-box;min-height:60px;resize:vertical;margin-bottom:8px"></textarea>' +
-        (state.tradeFormError ? '<div style="font-size:11px;color:#E24B4A;margin-bottom:8px">' + esc(state.tradeFormError) + '</div>' : "") +
-        '<button data-action="save-trade-entry" style="width:100%;padding:10px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13px">기록 저장</button>' +
+        '<textarea id="trade-memo-input" placeholder="메모 (매수/매도 이유, 생각 등)" style="width:100%;box-sizing:border-box;min-height:80px;resize:vertical;margin-bottom:10px"></textarea>' +
+        (state.tradeFormError ? '<div style="font-size:11px;color:#E24B4A;margin-bottom:10px">' + esc(state.tradeFormError) + '</div>' : "") +
+        '<button data-action="save-trade-entry" style="width:100%;padding:12px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13.5px">기록 저장</button>' +
       '</div>';
   }
 
-  var entries = state.tradeLog.filter(function (t) { return state.tradeJournalFilter === "" || t.ticker === state.tradeJournalFilter; })
-    .slice().sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+  var entries = state.tradeLog.slice().sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
 
   var entriesHtml = entries.length === 0
-    ? '<div style="text-align:center;color:#5B6270;font-size:12.5px;padding:24px 0">아직 기록된 거래가 없습니다.</div>'
+    ? '<div style="text-align:center;color:#5B6270;font-size:12.5px;padding:32px 0">아직 기록된 거래가 없습니다.</div>'
     : entries.map(function (t) {
         var s = getStockOrCash(t.ticker);
         var isKR = s ? s.market === "KR" : true;
@@ -2056,7 +2212,7 @@ function tradeJournalModalHtml() {
           ? '<span style="font-size:11.5px;font-weight:600;color:' + (t.realizedPL >= 0 ? "#E24B4A" : "#4C8DFF") + '">실현손익 ' + (t.realizedPL >= 0 ? "+" : "") + fmtMoney(t.realizedPL, isKR) + '</span>'
           : "";
         return (
-          '<div style="padding:10px 0;border-bottom:1px solid #22262E">' +
+          '<div style="padding:14px 0;border-bottom:1px solid #22262E">' +
             '<div style="display:flex;justify-content:space-between;align-items:center">' +
               '<div style="font-size:12.5px;color:#F5F6F8;font-weight:600">' + esc(s ? s.name : t.ticker) + ' <span style="color:#5B6270;font-weight:400">' + esc(t.date) + '</span></div>' +
               '<button data-action="remove-trade-entry" data-id="' + t.id + '" style="background:none;border:none;color:#5B6270;font-size:16px;cursor:pointer;padding:2px;line-height:1">&times;</button>' +
@@ -2072,14 +2228,13 @@ function tradeJournalModalHtml() {
 
   return (
     '<div class="modal-backdrop" data-action="close-trade-journal">' +
-      '<div class="modal-sheet" data-action="stop">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<div class="modal-sheet" data-action="stop" style="max-width:520px;max-height:92vh">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
           '<div style="font-size:17px;font-weight:700;color:#F5F6F8">\u{1F4DD} 매매일지</div>' +
           '<button class="close-btn" data-action="close-trade-journal">&times;</button>' +
         '</div>' +
-        '<div class="info-box" style="margin-bottom:14px">거래를 기록하면 매수는 보유수량·평단가에, 매도는 보유수량과 실현손익에 자동으로 반영됩니다.</div>' +
-        '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:12px">' + filterChipsHtml + '</div>' +
-        '<button data-action="toggle-trade-form" style="width:100%;padding:11px;border-radius:10px;border:1px solid ' + (state.tradeFormOpen ? "#4C8DFF;background:#1B2436" : "#2A2F38;background:#1B1F26") + ';color:#F5F6F8;font-weight:600;cursor:pointer;font-size:13px;margin-bottom:14px">' + (state.tradeFormOpen ? "닫기" : "+ 거래 기록 추가") + '</button>' +
+        '<div class="info-box" style="margin-bottom:18px">거래를 기록하면 매수는 보유수량·평단가에, 매도는 보유수량과 실현손익에 자동으로 반영됩니다.</div>' +
+        '<button data-action="toggle-trade-form" style="width:100%;padding:12px;border-radius:10px;border:1px solid ' + (state.tradeFormOpen ? "#4C8DFF;background:#1B2436" : "#2A2F38;background:#1B1F26") + ';color:#F5F6F8;font-weight:600;cursor:pointer;font-size:13.5px;margin-bottom:18px">' + (state.tradeFormOpen ? "닫기" : "+ 거래 기록 추가") + '</button>' +
         formHtml +
         entriesHtml +
       '</div>' +
@@ -2379,6 +2534,8 @@ function render() {
     modalHtml = addToPortfolioModalHtml();
   } else if (state.showTradeJournal) {
     modalHtml = tradeJournalModalHtml();
+  } else if (state.showMarketDetail) {
+    modalHtml = marketDetailHtml();
   }
   var uploadHtml = state.showUpload ? uploadModalHtml() : "";
   var gaugeSectionHtml = state.page === 0 ? '<div style="padding:10px 16px 0">' + gaugeHtml(fgScore) + '</div>' : "";
@@ -2487,6 +2644,58 @@ function render() {
         } else if (e.key === "Escape") {
           state.portfolioSuggestionsOpen = false;
           state.portfolioHighlightIndex = -1;
+          render();
+        }
+      });
+    }
+  }
+
+  // 매매일지 종목 검색창 포커스 유지 + 자체 드롭다운 처리
+  if (state.showTradeJournal) {
+    var tradeInput = document.getElementById("trade-ticker-search-input");
+    if (tradeInput) {
+      var tComposing = false;
+      function commitTradeSearch(e) {
+        state.tradeFormTickerQuery = e.target.value;
+        state.tradeFormSuggestionsOpen = true;
+        state.tradeFormHighlightIndex = -1;
+        var focusPos = e.target.selectionStart;
+        render();
+        var newInput = document.getElementById("trade-ticker-search-input");
+        if (newInput) { newInput.focus(); newInput.setSelectionRange(focusPos, focusPos); }
+      }
+      tradeInput.addEventListener("compositionstart", function () { tComposing = true; });
+      tradeInput.addEventListener("compositionend", function () { tComposing = false; });
+      tradeInput.addEventListener("input", function (e) {
+        state.tradeFormTickerQuery = e.target.value;
+        if (tComposing) return;
+        commitTradeSearch(e);
+      });
+      tradeInput.addEventListener("keydown", function (e) {
+        var query = state.tradeFormTickerQuery.trim().toLowerCase();
+        var suggestions = query
+          ? state.stocks.filter(function (s) { return matchesSearch(s, query); }).slice(0, 8)
+          : [];
+        if (!state.tradeFormSuggestionsOpen || suggestions.length === 0) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          state.tradeFormHighlightIndex = (state.tradeFormHighlightIndex + 1) % suggestions.length;
+          render();
+          var i1 = document.getElementById("trade-ticker-search-input");
+          if (i1) { i1.focus(); var v = i1.value; i1.setSelectionRange(v.length, v.length); }
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          state.tradeFormHighlightIndex = (state.tradeFormHighlightIndex - 1 + suggestions.length) % suggestions.length;
+          render();
+          var i2 = document.getElementById("trade-ticker-search-input");
+          if (i2) { i2.focus(); var v2 = i2.value; i2.setSelectionRange(v2.length, v2.length); }
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          var pick = suggestions[state.tradeFormHighlightIndex >= 0 ? state.tradeFormHighlightIndex : 0];
+          if (pick) selectTradeFormTicker(pick.ticker);
+        } else if (e.key === "Escape") {
+          state.tradeFormSuggestionsOpen = false;
+          state.tradeFormHighlightIndex = -1;
           render();
         }
       });
@@ -2757,12 +2966,17 @@ document.addEventListener("click", function (e) {
     toggleTradeForm();
   } else if (action === "set-trade-type") {
     setTradeFormType(el.getAttribute("data-type"));
-  } else if (action === "set-trade-journal-filter") {
-    setTradeJournalFilter(el.getAttribute("data-ticker"));
+  } else if (action === "select-trade-ticker") {
+    selectTradeFormTicker(el.getAttribute("data-ticker"));
   } else if (action === "save-trade-entry") {
     saveTradeEntry();
   } else if (action === "remove-trade-entry") {
     removeTradeEntry(el.getAttribute("data-id"));
+  } else if (action === "open-market-detail") {
+    state.showMarketDetail = true;
+    render();
+  } else if (action === "close-market-detail") {
+    if (e.target === el) { state.showMarketDetail = false; render(); }
   } else if (action === "stop") {
     e.stopPropagation();
   }
@@ -2776,7 +2990,7 @@ document.addEventListener("input", function (e) {
     state.dcaYears = parseInt(e.target.value, 10);
     render();
   } else if (e.target.getAttribute("data-action") === "trade-ticker-select") {
-    setTradeFormTicker(e.target.value);
+    selectTradeFormTicker(e.target.value);
   }
 });
 
@@ -2878,7 +3092,8 @@ window.addEventListener("online", syncLiveData);
     // 상세정보 등 모달이 열려있으면 body 스크롤이 막혀(overflow:hidden) atTop()이
     // 항상 true가 되어버려, 모달 내부 스크롤만 해도 당겨서 새로고침이 오작동한다.
     return !!(state.selectedTicker || state.showPortfolioDetail || state.editingTicker ||
-      state.showPasswordForm || state.addToPortfolioTicker || state.showUpload || state.showTradeJournal);
+      state.showPasswordForm || state.addToPortfolioTicker || state.showUpload || state.showTradeJournal ||
+      state.showMarketDetail);
   }
   function setPull(px, animate) {
     ptr.style.transition = animate ? "transform 0.2s ease-out, opacity 0.2s ease-out" : "none";

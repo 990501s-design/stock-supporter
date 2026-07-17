@@ -262,6 +262,13 @@ def _fetch_price_change(ticker):
     return round(price, 2), round(change_pct, 2)
 
 
+def _fetch_hist_closes(ticker, days=30):
+    """최근 N거래일 종가 배열을 반환 (차트용)"""
+    hist = yf.Ticker(ticker).history(period="2mo", interval="1d", auto_adjust=True)
+    closes = hist["Close"].dropna().tail(days)
+    return [round(float(v), 2) for v in closes.tolist()]
+
+
 def fetch_market_summary(fallback):
     """VIX·유가·달러인덱스·주요지수(S&P500/나스닥/코스피/니케이)·장단기 금리차를 조회"""
     result = {"asOf": str(date.today())}
@@ -273,7 +280,11 @@ def fetch_market_summary(fallback):
     for key, ticker in specs:
         try:
             price, change_pct = _fetch_price_change(ticker)
-            result[key] = {"price": price, "changePct": change_pct}
+            try:
+                hist = _fetch_hist_closes(ticker)
+            except Exception:
+                hist = fallback.get(key, {}).get("hist") if fallback else None
+            result[key] = {"price": price, "changePct": change_pct, "hist": hist}
         except Exception as e:
             print(f"  ⚠️ '{ticker}' 조회 실패, 이전 값 유지: {e}")
             if fallback and fallback.get(key):
@@ -289,7 +300,11 @@ def fetch_market_summary(fallback):
     for key, ticker in index_specs:
         try:
             price, change_pct = _fetch_price_change(ticker)
-            indices[key] = {"price": price, "changePct": change_pct}
+            try:
+                hist = _fetch_hist_closes(ticker)
+            except Exception:
+                hist = fallback.get("indices", {}).get(key, {}).get("hist") if fallback else None
+            indices[key] = {"price": price, "changePct": change_pct, "hist": hist}
         except Exception as e:
             print(f"  ⚠️ '{ticker}' 조회 실패, 이전 값 유지: {e}")
             if fallback and fallback.get("indices", {}).get(key):
