@@ -399,9 +399,21 @@ function recordPortfolioSnapshot() {
   cloudSaveHistory(state.portfolioId, history);
 }
 
+function readRestorePage() {
+  // 당겨서 새로고침 직전에 저장해둔 탭(챕터)이 있으면 복원하고, 1회성이므로 바로 지운다.
+  try {
+    var saved = sessionStorage.getItem("ptrRestorePage");
+    if (saved !== null) {
+      sessionStorage.removeItem("ptrRestorePage");
+      return parseInt(saved, 10);
+    }
+  } catch (err) {}
+  return 0;
+}
+
 var state = {
   stocks: SEED_STOCKS.slice(),
-  page: 0,
+  page: readRestorePage(),
   selectedTicker: null,
   showUpload: false,
   themeFilter: "전체",
@@ -2431,6 +2443,12 @@ window.addEventListener("online", syncLiveData);
   function atTop() {
     return (document.scrollingElement || document.documentElement).scrollTop <= 0;
   }
+  function anyModalOpen() {
+    // 상세정보 등 모달이 열려있으면 body 스크롤이 막혀(overflow:hidden) atTop()이
+    // 항상 true가 되어버려, 모달 내부 스크롤만 해도 당겨서 새로고침이 오작동한다.
+    return !!(state.selectedTicker || state.showPortfolioDetail || state.editingTicker ||
+      state.showPasswordForm || state.addToPortfolioTicker || state.showUpload);
+  }
   function setPull(px, animate) {
     ptr.style.transition = animate ? "transform 0.2s ease-out, opacity 0.2s ease-out" : "none";
     ptr.style.transform = "translate(-50%, " + (px - 40) + "px)";
@@ -2439,7 +2457,7 @@ window.addEventListener("online", syncLiveData);
 
   document.addEventListener("touchstart", function (e) {
     if (refreshing) return;
-    tracking = atTop();
+    tracking = atTop() && !anyModalOpen();
     startY = e.touches[0].clientY;
     currentPull = 0;
   }, { passive: true });
@@ -2447,7 +2465,7 @@ window.addEventListener("online", syncLiveData);
   document.addEventListener("touchmove", function (e) {
     if (!tracking || refreshing) return;
     var dy = e.touches[0].clientY - startY;
-    if (dy <= 0 || !atTop()) { tracking = false; setPull(0, true); return; }
+    if (dy <= 0 || !atTop() || anyModalOpen()) { tracking = false; setPull(0, true); return; }
     e.preventDefault();
     currentPull = Math.min(dy * 0.5, MAX_PULL);
     setPull(currentPull, false);
@@ -2463,6 +2481,9 @@ window.addEventListener("online", syncLiveData);
       spinner.classList.add("ptr-spin");
       // 당겨서 새로고침은 시세뿐 아니라 앱 코드 자체의 업데이트(새 기능 등)까지
       // 전부 반영해야 하므로 데이터만 병합하지 않고 페이지를 완전히 새로 불러온다.
+      // 다만 새로고침으로 상태가 초기화되면 보던 챕터(탭)로 돌아가므로,
+      // 현재 탭을 세션스토리지에 저장해뒀다가 재로드 후 복원한다.
+      try { sessionStorage.setItem("ptrRestorePage", String(state.page)); } catch (err) {}
       location.reload();
     } else {
       setPull(0, true);
