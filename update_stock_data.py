@@ -239,6 +239,75 @@ def fetch_exchange_rate(fallback):
         return fallback
 
 
+def load_existing_market_summary(html_text):
+    """기존 HTML에서 MARKET_SUMMARY 를 파싱해 fallback 값으로 사용"""
+    m = re.search(r"var MARKET_SUMMARY = (\{.*?\});", html_text)
+    if not m:
+        return None
+    try:
+        return json.loads(m.group(1))
+    except json.JSONDecodeError:
+        return None
+
+
+def _fetch_price_change(ticker):
+    """최근 종가와 전일 대비 변동률(%)을 반환"""
+    hist = yf.Ticker(ticker).history(period="5d", interval="1d", auto_adjust=True)
+    closes = hist["Close"].dropna()
+    if len(closes) < 2:
+        raise ValueError(f"{ticker} 데이터 부족")
+    price = float(closes.iloc[-1])
+    prev = float(closes.iloc[-2])
+    change_pct = (price / prev - 1) * 100 if prev else 0.0
+    return round(price, 2), round(change_pct, 2)
+
+
+def fetch_market_summary(fallback):
+    """VIX·유가·달러인덱스·주요지수(S&P500/나스닥/코스피/니케이)·장단기 금리차를 조회"""
+    result = {"asOf": str(date.today())}
+    specs = [
+        ("vix", "^VIX"),
+        ("oil", "CL=F"),
+        ("dollarIndex", "DX-Y.NYB"),
+    ]
+    for key, ticker in specs:
+        try:
+            price, change_pct = _fetch_price_change(ticker)
+            result[key] = {"price": price, "changePct": change_pct}
+        except Exception as e:
+            print(f"  ⚠️ '{ticker}' 조회 실패, 이전 값 유지: {e}")
+            if fallback and fallback.get(key):
+                result[key] = fallback[key]
+
+    index_specs = [
+        ("sp500", "^GSPC"),
+        ("nasdaq", "^IXIC"),
+        ("kospi", "^KS11"),
+        ("nikkei", "^N225"),
+    ]
+    indices = {}
+    for key, ticker in index_specs:
+        try:
+            price, change_pct = _fetch_price_change(ticker)
+            indices[key] = {"price": price, "changePct": change_pct}
+        except Exception as e:
+            print(f"  ⚠️ '{ticker}' 조회 실패, 이전 값 유지: {e}")
+            if fallback and fallback.get("indices", {}).get(key):
+                indices[key] = fallback["indices"][key]
+    result["indices"] = indices
+
+    try:
+        y10 = yf.Ticker("^TNX").history(period="5d", interval="1d", auto_adjust=True)["Close"].dropna().iloc[-1]
+        y3m = yf.Ticker("^IRX").history(period="5d", interval="1d", auto_adjust=True)["Close"].dropna().iloc[-1]
+        result["rateSpread"] = {"value": round(float(y10) - float(y3m), 2), "label": "10Y-3M"}
+    except Exception as e:
+        print(f"  ⚠️ 장단기 금리차 조회 실패, 이전 값 유지: {e}")
+        if fallback and fallback.get("rateSpread"):
+            result["rateSpread"] = fallback["rateSpread"]
+
+    return result
+
+
 ETF_NAME_MARKERS = ("ETF", "Trust", "TIGER", "KODEX", "ACE ", "PLUS ", "iShares", "SPDR", "1Q ", "SOL")
 ETF_TOP_N = 7
 
@@ -813,6 +882,7 @@ def main():
     historical_fallback = load_existing_historical_returns(html_text)
     technical_fallback = load_existing_technical_data(html_text)
     exchange_rate_fallback = load_existing_exchange_rate(html_text)
+    market_summary_fallback = load_existing_market_summary(html_text)
     etf_holdings_fallback = load_existing_etf_holdings(html_text)
     fundamentals_fallback = load_existing_fundamentals(html_text)
 
@@ -826,6 +896,8 @@ def main():
     technical_data = build_technical_data(mapping_rows, fetched, technical_fallback)
     fear_greed = fetch_fear_greed(fear_greed_fallback)
     exchange_rate = fetch_exchange_rate(exchange_rate_fallback)
+    print("시장 요약(VIX·유가·달러인덱스·주요지수·금리차) 조회 중...")
+    market_summary = fetch_market_summary(market_summary_fallback)
     print("ETF 구성종목(TOP7) 조회 중...")
     etf_holdings = fetch_etf_holdings(mapping_rows, etf_holdings_fallback)
 
@@ -898,6 +970,18 @@ def main():
         if er_n == 0:
             print("🚨 HTML에서 EXCHANGE_RATE 를 찾지 못했습니다. 환율은 갱신하지 않았습니다.")
 
+    if market_summary is not None:
+        ms_json = json.dumps(market_summary, ensure_ascii=False)
+        ms_line = f"var MARKET_SUMMARY = {ms_json};"
+        new_html, ms_n = re.subn(
+            r"var MARKET_SUMMARY = \{.*?\};",
+            lambda _m: ms_line,
+            new_html,
+            count=1,
+        )
+        if ms_n == 0:
+            print("🚨 HTML에서 MARKET_SUMMARY 를 찾지 못했습니다. 시장 요약은 갱신하지 않았습니다.")
+
     if etf_holdings:
         eh_json = json.dumps(etf_holdings, ensure_ascii=False)
         eh_line = f"var ETF_HOLDINGS = {eh_json};"
@@ -934,6 +1018,9 @@ def main():
     print(f"   차트/지지·저항선 데이터: {len(technical_data)}개 종목")
     if exchange_rate is not None:
         print(f"   원/달러 환율: {exchange_rate['usdKrw']}원 ({exchange_rate['asOf']} 기준)")
+    if market_summary is not None:
+        print(f"   시장 요약: VIX {market_summary.get('vix', {}).get('price')}, "
+              f"금리차(10Y-3M) {market_summary.get('rateSpread', {}).get('value')}%p")
     print(f"   ETF 구성종목 데이터: {len(etf_holdings)}개 ETF")
     kr_count = sum(1 for r in mapping_rows if r["market"].strip() == "KR")
     print(f"   네이버 실시간 시세: {len(naver_quotes)}/{kr_count}개 국내 종목")

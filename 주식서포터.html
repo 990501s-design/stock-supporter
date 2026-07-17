@@ -115,6 +115,7 @@ var FEAR_GREED_DATA = {"value": 42, "label": "Fear", "timestamp": "2026-07-17T05
 
 var HISTORICAL_RETURNS = {"nasdaq": {"cagr": 0.1695, "vol": 0.01391, "years": 20.0, "asOf": "2026-07-16"}, "gold": {"cagr": 0.0923, "vol": 0.01142, "years": 20.0, "asOf": "2026-07-16"}};
 var EXCHANGE_RATE = {"usdKrw": 1476.8, "asOf": "2026-07-17"};
+var MARKET_SUMMARY = {"asOf": "2026-07-17", "vix": {"price": 16.73, "changePct": 0.0}, "oil": {"price": 78.78, "changePct": 0.0}, "dollarIndex": {"price": 100.75, "changePct": 0.0}, "indices": {"sp500": {"price": 7533.77, "changePct": 0.0}, "nasdaq": {"price": 25881.95, "changePct": 0.0}, "kospi": {"price": 6820.6, "changePct": 0.0}, "nikkei": {"price": 63393.22, "changePct": 0.0}}, "rateSpread": {"value": 0.87, "label": "10Y-3M"}};
 var FUNDAMENTALS_DATA = {"NVDA": {"per": 32.56, "peg": 0.65, "eps": 6.37, "sector": "Technology", "nextEarnings": "2026-08-26", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SPCX": {"per": null, "peg": null, "eps": -0.66, "sector": "Industrials", "nextEarnings": null, "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "DIA": {"per": 24.8, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "QQQ": {"per": 31.33, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "SPY(VOO,SPYM)": {"per": 27.0, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "SMH": {"per": 36.83, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "AMZN": {"per": 30.47, "peg": 1.47, "eps": 8.2, "sector": "Consumer Cyclical", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "GOOG": {"per": 28.26, "peg": 1.46, "eps": 12.52, "sector": "Communication Services", "nextEarnings": "2026-07-22", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "GOOGL": {"per": 28.33, "peg": 1.46, "eps": 12.51, "sector": "Communication Services", "nextEarnings": "2026-07-22", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "TSLA": {"per": 355.51, "peg": 4.94, "eps": 1.1, "sector": "Consumer Cyclical", "nextEarnings": "2026-07-22", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "AAPL": {"per": 39.67, "peg": 2.65, "eps": 8.4, "sector": "Technology", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "MSFT": {"per": 23.58, "peg": 1.22, "eps": 17.01, "sector": "Technology", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "META": {"per": 24.75, "peg": 0.98, "eps": 26.85, "sector": "Communication Services", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "AVGO": {"per": 65.81, "peg": 0.44, "eps": 5.69, "sector": "Technology", "nextEarnings": "2026-09-03", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "LLY": {"per": 41.59, "peg": 1.55, "eps": 28.11, "sector": "Healthcare", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "NFLX": {"per": 23.98, "peg": 1.45, "eps": 3.1, "sector": "Communication Services", "nextEarnings": "2026-07-16", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "NVO": {"per": 12.35, "peg": 3.74, "eps": 4.17, "sector": "Healthcare", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "MRK": {"per": 35.95, "peg": 6.11, "eps": 3.55, "sector": "Healthcare", "nextEarnings": "2026-08-04", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "DELL": {"per": 32.89, "peg": 0.68, "eps": 11.9, "sector": "Technology", "nextEarnings": "2026-09-03", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "Oracle": {"per": 22.71, "peg": 0.75, "eps": 5.47, "sector": "Technology", "nextEarnings": "2026-09-09", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "CRWD": {"per": null, "peg": 6.72, "eps": -0.02, "sector": "Technology", "nextEarnings": "2026-09-01", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "CRWV": {"per": null, "peg": null, "eps": -2.72, "sector": "Technology", "nextEarnings": "2026-05-07", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "CRM": {"per": 19.34, "peg": 0.69, "eps": 8.93, "sector": "Technology", "nextEarnings": "2026-09-02", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "RIVN": {"per": null, "peg": null, "eps": -2.8, "sector": "Consumer Cyclical", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "SNDK": {"per": 48.28, "peg": null, "eps": 29.23, "sector": "Technology", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "MU": {"per": 20.45, "peg": 0.13, "eps": 41.72, "sector": "Technology", "nextEarnings": "2026-09-23", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "ZM": {"per": 13.64, "peg": 4.21, "eps": 6.81, "sector": "Technology", "nextEarnings": "2026-08-20", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "WDC": {"per": 30.77, "peg": 0.46, "eps": 15.17, "sector": "Technology", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "STX": {"per": 78.72, "peg": 0.57, "eps": 9.47, "sector": "Technology", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "MRVL": {"per": 64.71, "peg": 1.17, "eps": 2.91, "sector": "Technology", "nextEarnings": "2026-08-27", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "COHR": {"per": 142.76, "peg": 0.92, "eps": 1.94, "sector": "Technology", "nextEarnings": "2026-05-06", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "AMD": {"per": 175.15, "peg": 1.27, "eps": 2.86, "sector": "Technology", "nextEarnings": "2026-08-04", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "INTC": {"per": null, "peg": 1.36, "eps": -0.56, "sector": "Technology", "nextEarnings": "2026-07-23", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "LITE": {"per": 131.51, "peg": 0.63, "eps": 5.37, "sector": "Technology", "nextEarnings": "2026-08-11", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "TSM": {"per": 36.49, "peg": 1.31, "eps": 11.23, "sector": "Technology", "nextEarnings": "2026-07-16", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "ARM": {"per": 323.47, "peg": 2.29, "eps": 0.81, "sector": "Technology", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "UNH": {"per": 31.55, "peg": 1.45, "eps": 13.42, "sector": "Healthcare", "nextEarnings": "2026-07-16", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "ASML": {"per": 56.84, "peg": 2.7, "eps": 31.4, "sector": "Technology", "nextEarnings": "2026-10-14", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "COST": {"per": 46.08, "peg": 4.45, "eps": 20.52, "sector": "Consumer Defensive", "nextEarnings": "2026-09-24", "asOf": "2026-07-17", "sectorAvgPer": 28.92}, "CMG": {"per": 31.38, "peg": 1.86, "eps": 1.09, "sector": "Consumer Cyclical", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "NIKE": {"per": 20.35, "peg": 1.63, "eps": 2.19, "sector": "Consumer Cyclical", "nextEarnings": "2026-09-29", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "SBUX": {"per": 80.27, "peg": 1.29, "eps": 1.35, "sector": "Consumer Cyclical", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "LULU": {"per": 9.5, "peg": 0.9, "eps": 12.5, "sector": "Consumer Cyclical", "nextEarnings": "2026-09-03", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "Crocs": {"per": null, "peg": 1.39, "eps": -1.68, "sector": "Consumer Cyclical", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "DPZ": {"per": 17.89, "peg": 1.52, "eps": 18.43, "sector": "Consumer Cyclical", "nextEarnings": "2026-07-20", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "BOTZ": {"per": 34.85, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "HD": {"per": 24.27, "peg": 1.93, "eps": 14.34, "sector": "Consumer Cyclical", "nextEarnings": "2026-08-18", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "Macy's": {"per": 9.8, "peg": 3.11, "eps": 2.46, "sector": "Consumer Cyclical", "nextEarnings": "2026-09-02", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "ISRG": {"per": 47.17, "peg": 2.03, "eps": 8.53, "sector": "Healthcare", "nextEarnings": "2026-07-16", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "IONQ": {"per": 94.86, "peg": null, "eps": 0.37, "sector": "Technology", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "QBTS": {"per": null, "peg": null, "eps": -1.14, "sector": "Technology", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "ARQQ": {"per": null, "peg": null, "eps": -3.03, "sector": "Technology", "nextEarnings": "2026-05-21", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "QUBT": {"per": null, "peg": null, "eps": -0.26, "sector": "Technology", "nextEarnings": "2026-08-10", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "QNT": {"per": null, "peg": null, "eps": -1.64, "sector": "Technology", "nextEarnings": null, "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SPXC": {"per": 41.69, "peg": 1.55, "eps": 5.18, "sector": "Industrials", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "RKLB": {"per": null, "peg": null, "eps": -0.28, "sector": "Industrials", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "PL": {"per": null, "peg": null, "eps": -1.16, "sector": "Industrials", "nextEarnings": "2026-06-04", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "GSAT": {"per": null, "peg": 0.5, "eps": -0.15, "sector": "Communication Services", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "ASTS": {"per": null, "peg": null, "eps": -1.49, "sector": "Technology", "nextEarnings": "2026-08-10", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "RDW": {"per": null, "peg": null, "eps": -2.59, "sector": "Industrials", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "LUNR": {"per": null, "peg": null, "eps": -0.79, "sector": "Industrials", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "SMCI": {"per": 12.99, "peg": 0.91, "eps": 1.9, "sector": "Technology", "nextEarnings": "2026-08-04", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SOUN": {"per": null, "peg": null, "eps": -0.68, "sector": "Technology", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "RBLX": {"per": null, "peg": 8.18, "eps": -1.49, "sector": "Communication Services", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "PLTR": {"per": 149.38, "peg": 1.92, "eps": 0.9, "sector": "Technology", "nextEarnings": "2026-08-03", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SOFI": {"per": 39.36, "peg": 0.85, "eps": 0.44, "sector": "Financial Services", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "V": {"per": 30.97, "peg": 1.56, "eps": 11.79, "sector": "Financial Services", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "U": {"per": null, "peg": null, "eps": -1.52, "sector": "Technology", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SNOW": {"per": null, "peg": 7.03, "eps": -3.48, "sector": "Technology", "nextEarnings": "2026-08-26", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "VUZI": {"per": null, "peg": null, "eps": -0.39, "sector": "Technology", "nextEarnings": "2026-08-13", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "ABNB": {"per": 36.49, "peg": 1.37, "eps": 4.05, "sector": "Consumer Cyclical", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "NTLA": {"per": null, "peg": null, "eps": -3.2, "sector": "Healthcare", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "DIS": {"per": 15.95, "peg": 2.26, "eps": 6.25, "sector": "Communication Services", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "PYPL": {"per": 10.41, "peg": 1.0, "eps": 5.45, "sector": "Financial Services", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "AFRM": {"per": 73.93, "peg": 0.82, "eps": 1.08, "sector": "Financial Services", "nextEarnings": "2026-08-27", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "APPS": {"per": null, "peg": 0.69, "eps": -0.29, "sector": "Technology", "nextEarnings": "2026-08-04", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "BAC": {"per": 14.23, "peg": 1.1, "eps": 4.32, "sector": "Financial Services", "nextEarnings": "2026-10-14", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "IBM": {"per": 19.38, "peg": 2.01, "eps": 11.3, "sector": "Technology", "nextEarnings": "2026-07-22", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "WMT": {"per": 39.64, "peg": 4.28, "eps": 2.9, "sector": "Consumer Defensive", "nextEarnings": "2026-08-20", "asOf": "2026-07-17", "sectorAvgPer": 28.92}, "GS": {"per": 16.92, "peg": 1.75, "eps": 64.75, "sector": "Financial Services", "nextEarnings": "2026-10-13", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "JPM": {"per": 14.86, "peg": 1.82, "eps": 23.09, "sector": "Financial Services", "nextEarnings": "2026-10-13", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "RGTI": {"per": null, "peg": null, "eps": -0.82, "sector": "Technology", "nextEarnings": "2026-05-11", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "ENPH": {"per": 40.67, "peg": 1.19, "eps": 1.01, "sector": "Technology", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "KO": {"per": 25.89, "peg": 4.03, "eps": 3.28, "sector": "Consumer Defensive", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 28.92}, "ADBE": {"per": 12.85, "peg": 0.61, "eps": 18.31, "sector": "Technology", "nextEarnings": "2026-09-10", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "Target": {"per": 18.28, "peg": 2.57, "eps": 7.67, "sector": "Consumer Defensive", "nextEarnings": "2026-08-19", "asOf": "2026-07-17", "sectorAvgPer": 28.92}, "CHPT": {"per": null, "peg": null, "eps": -8.67, "sector": "Consumer Cyclical", "nextEarnings": "2026-09-02", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "LCID": {"per": null, "peg": null, "eps": -14.27, "sector": "Consumer Cyclical", "nextEarnings": "2026-08-04", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "NIO": {"per": null, "peg": null, "eps": -0.55, "sector": "Consumer Cyclical", "nextEarnings": "2026-05-21", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "Block XYZ": {"per": 64.19, "peg": 0.88, "eps": 1.27, "sector": "Technology", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "KOPN": {"per": 369.0, "peg": 8.75, "eps": 0.01, "sector": "Technology", "nextEarnings": "2026-08-11", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "Zillow": {"per": 136.32, "peg": 0.93, "eps": 0.25, "sector": "Communication Services", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "GPRO": {"per": null, "peg": 0.73, "eps": -0.76, "sector": "Technology", "nextEarnings": "2026-08-10", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "ABCL": {"per": null, "peg": null, "eps": -0.44, "sector": "Healthcare", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "INVHR": {"per": 31.36, "peg": 13.14, "eps": 0.97, "sector": "Real Estate", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 41.56}, "UBER": {"per": 18.37, "peg": 5.89, "eps": 4.03, "sector": "Technology", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "CRSP": {"per": null, "peg": null, "eps": -5.83, "sector": "Healthcare", "nextEarnings": "2026-05-11", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "BBY": {"per": 15.79, "peg": 1.63, "eps": 5.4, "sector": "Consumer Cyclical", "nextEarnings": "2026-08-27", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "JOBY": {"per": null, "peg": null, "eps": -1.08, "sector": "Industrials", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "Circle": {"per": null, "peg": 4.34, "eps": -0.21, "sector": "Financial Services", "nextEarnings": "2026-08-11", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "CAR": {"per": null, "peg": 0.17, "eps": -18.37, "sector": "Industrials", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "TEM": {"per": null, "peg": null, "eps": -1.61, "sector": "Healthcare", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "IREN": {"per": 49.76, "peg": 3.11, "eps": 0.7, "sector": "Financial Services", "nextEarnings": "2026-08-27", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "Nebius": {"per": 77.03, "peg": 0.63, "eps": 2.23, "sector": "Communication Services", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "CRDO": {"per": 90.03, "peg": null, "eps": 2.31, "sector": "Technology", "nextEarnings": "2026-06-01", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "PANW": {"per": 313.27, "peg": 3.97, "eps": 1.13, "sector": "Technology", "nextEarnings": "2026-08-18", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "PFE": {"per": 18.9, "peg": 2.9, "eps": 1.33, "sector": "Healthcare", "nextEarnings": "2026-08-04", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "PGY": {"per": 16.05, "peg": 0.05, "eps": 1.09, "sector": "Technology", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SHOP": {"per": 121.42, "peg": 2.57, "eps": 1.03, "sector": "Technology", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "APP": {"per": 39.36, "peg": 1.24, "eps": 11.04, "sector": "Communication Services", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "MCD": {"per": 21.84, "peg": 2.54, "eps": 12.52, "sector": "Consumer Cyclical", "nextEarnings": "2026-08-04", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "DAL": {"per": 14.26, "peg": 0.21, "eps": 6.08, "sector": "Industrials", "nextEarnings": "2026-10-08", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "ANET": {"per": 59.14, "peg": 2.19, "eps": 2.85, "sector": "Technology", "nextEarnings": "2026-08-04", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "FIG": {"per": null, "peg": 8.7, "eps": -4.06, "sector": "Technology", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "PATH": {"per": 20.05, "peg": 0.43, "eps": 0.6, "sector": "Technology", "nextEarnings": "2026-05-28", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SERV": {"per": null, "peg": null, "eps": -2.05, "sector": "Industrials", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "JNJ": {"per": 28.67, "peg": 4.74, "eps": 8.72, "sector": "Healthcare", "nextEarnings": "2026-10-13", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "SK하이닉스": {"per": null, "peg": 0.43, "eps": null, "sector": "Technology", "nextEarnings": "2026-04-22", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "LRCX": {"per": 63.31, "peg": 1.94, "eps": 5.07, "sector": "Technology", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SKHYV": {"per": 25.73, "peg": 0.64, "eps": 5.92, "sector": "Technology", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "삼성전자": {"per": null, "peg": 0.18, "eps": null, "sector": "Technology", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "BE": {"per": null, "peg": 1.16, "eps": -0.04, "sector": "Industrials", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "현대차": {"per": null, "peg": 4.13, "eps": null, "sector": "Consumer Cyclical", "nextEarnings": "2026-07-23", "asOf": "2026-07-17", "sectorAvgPer": 54.46}, "네이버": {"per": null, "peg": 23.2, "eps": null, "sector": "Communication Services", "nextEarnings": "2026-08-07", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "RDDT": {"per": 56.48, "peg": 1.42, "eps": 3.28, "sector": "Communication Services", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "EL": {"per": null, "peg": 1.42, "eps": -0.7, "sector": "Consumer Defensive", "nextEarnings": "2026-05-01", "asOf": "2026-07-17", "sectorAvgPer": 28.92}, "CSCO": {"per": 37.3, "peg": 1.55, "eps": 2.94, "sector": "Technology", "nextEarnings": "2026-08-12", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "GLW": {"per": 84.25, "peg": 1.66, "eps": 1.88, "sector": "Technology", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "USAR": {"per": null, "peg": null, "eps": -4.04, "sector": "Basic Materials", "nextEarnings": "2026-08-10", "asOf": "2026-07-17"}, "ZS": {"per": null, "peg": 1.61, "eps": -0.47, "sector": "Technology", "nextEarnings": "2026-05-26", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "VZ": {"per": 10.7, "peg": 0.8, "eps": 4.1, "sector": "Communication Services", "nextEarnings": "2026-07-24", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "HPE": {"per": 42.18, "peg": 0.85, "eps": 1.07, "sector": "Technology", "nextEarnings": "2026-06-01", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "DRAM": {"per": 23.57, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "NOW": {"per": 62.66, "peg": 0.92, "eps": 1.66, "sector": "Technology", "nextEarnings": "2026-07-22", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "SOXX": {"per": 37.5, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "SATL": {"per": null, "peg": null, "eps": -0.61, "sector": "Industrials", "nextEarnings": "2026-05-12", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "삼성전기": {"per": null, "peg": 1.69, "eps": null, "sector": "Technology", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "리노공업": {"per": null, "peg": null, "eps": null, "sector": "Technology", "nextEarnings": "2025-08-11", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "DB하이텍": {"per": null, "peg": null, "eps": null, "sector": "Technology", "nextEarnings": "2025-07-29", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "한미반도체": {"per": null, "peg": 1.32, "eps": null, "sector": "Technology", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "이오테크닉스": {"per": null, "peg": null, "eps": null, "sector": "Technology", "nextEarnings": "2025-08-12", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "원익IPS": {"per": null, "peg": null, "eps": null, "sector": "Technology", "nextEarnings": "2025-08-06", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "티씨케이": {"per": null, "peg": 0.6, "eps": null, "sector": null, "nextEarnings": "2025-07-17", "asOf": "2026-07-17"}, "피에스케이": {"per": null, "peg": null, "eps": null, "sector": "Technology", "nextEarnings": "2025-08-12", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "레인보우로보틱스": {"per": null, "peg": null, "eps": null, "sector": "Industrials", "nextEarnings": null, "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "로보티즈": {"per": null, "peg": null, "eps": null, "sector": "Technology", "nextEarnings": null, "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "두산로보틱스": {"per": null, "peg": null, "eps": null, "sector": "Industrials", "nextEarnings": null, "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "한국전력": {"per": null, "peg": null, "eps": null, "sector": "Utilities", "nextEarnings": "2026-08-12", "asOf": "2026-07-17"}, "HD현대일렉트릭": {"per": null, "peg": null, "eps": null, "sector": "Industrials", "nextEarnings": "2026-07-23", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "효성중공업": {"per": null, "peg": null, "eps": null, "sector": "Industrials", "nextEarnings": "2025-07-24", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "한화오션": {"per": null, "peg": 0.44, "eps": null, "sector": "Industrials", "nextEarnings": "2026-07-27", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "HD한국조선해양": {"per": null, "peg": 0.21, "eps": null, "sector": "Industrials", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "LS ELECTRIC": {"per": null, "peg": null, "eps": null, "sector": "Industrials", "nextEarnings": "2026-04-21", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "삼성중공업": {"per": null, "peg": 0.11, "eps": null, "sector": "Industrials", "nextEarnings": "2025-07-23", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "신한지주": {"per": null, "peg": 5.14, "eps": null, "sector": "Financial Services", "nextEarnings": "2026-07-23", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "KB금융": {"per": null, "peg": 0.74, "eps": null, "sector": "Financial Services", "nextEarnings": "2026-07-23", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "하나금융지주": {"per": null, "peg": 4.79, "eps": null, "sector": "Financial Services", "nextEarnings": "2026-07-24", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "아모레퍼시픽": {"per": null, "peg": null, "eps": null, "sector": "Consumer Defensive", "nextEarnings": "2026-05-07", "asOf": "2026-07-17", "sectorAvgPer": 28.92}, "카카오": {"per": null, "peg": 1.2, "eps": null, "sector": "Communication Services", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 44.12}, "LG생활건강": {"per": null, "peg": 4.44, "eps": null, "sector": "Consumer Defensive", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 28.92}, "삼성바이오로직스": {"per": null, "peg": 2.08, "eps": null, "sector": "Healthcare", "nextEarnings": "2026-07-23", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "한화시스템": {"per": null, "peg": null, "eps": null, "sector": "Industrials", "nextEarnings": "2025-08-11", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "셀트리온": {"per": null, "peg": 0.85, "eps": null, "sector": "Healthcare", "nextEarnings": "2026-08-06", "asOf": "2026-07-17", "sectorAvgPer": 30.88}, "한국항공우주": {"per": null, "peg": 0.47, "eps": null, "sector": "Industrials", "nextEarnings": "2025-07-28", "asOf": "2026-07-17", "sectorAvgPer": 27.97}, "COIN": {"per": 61.26, "peg": 1.6, "eps": 2.62, "sector": "Financial Services", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "QLD": {"per": 29.91, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "MSTR": {"per": null, "peg": 2.85, "eps": -36.99, "sector": "Technology", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "ZETA": {"per": null, "peg": 0.77, "eps": -0.1, "sector": "Technology", "nextEarnings": "2026-04-30", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "PENG": {"per": 52.36, "peg": null, "eps": 1.26, "sector": "Technology", "nextEarnings": "2026-07-07", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "PDI": {"per": 7.98, "peg": null, "eps": 2.06, "sector": "Financial Services", "nextEarnings": "2024-09-04", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "GOF": {"per": 6.21, "peg": null, "eps": 1.73, "sector": "Financial Services", "nextEarnings": "2025-07-31", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "BST": {"per": 6.56, "peg": null, "eps": 7.03, "sector": "Financial Services", "nextEarnings": "2025-03-07", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "O": {"per": 51.77, "peg": 5.68, "eps": 1.27, "sector": "Real Estate", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 41.56}, "HOOD": {"per": 56.1, "peg": 3.13, "eps": 1.89, "sector": "Financial Services", "nextEarnings": "2026-07-29", "asOf": "2026-07-17", "sectorAvgPer": 29.89}, "MO": {"per": 14.72, "peg": 1.61, "eps": 4.96, "sector": "Consumer Defensive", "nextEarnings": "2026-07-30", "asOf": "2026-07-17", "sectorAvgPer": 28.92}, "AIPO": {"per": 32.46, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "JEPQ": {"per": 31.4, "peg": null, "eps": null, "sector": null, "nextEarnings": null, "asOf": "2026-07-17"}, "STRC": {"per": null, "peg": null, "eps": null, "sector": "Technology", "nextEarnings": "2026-08-05", "asOf": "2026-07-17", "sectorAvgPer": 76.31}, "MARA": {"per": null, "peg": 0.1, "eps": -5.06, "sector": "Financial Services", "nextEarnings": "2026-07-28", "asOf": "2026-07-17", "sectorAvgPer": 29.89}};
 // 같은 지수를 추종하는 일반/레버리지 ETF 쌍은 개별종목으로 분해하지 않고
 // 레버리지 배수(베타)를 반영한 합산 노출로 하나의 항목으로 묶어서 보여준다.
@@ -271,6 +272,16 @@ function cloudSaveHistory(id, history) {
   firestoreSet("history", id, history);
 }
 
+function cloudSaveTradeLog(id, tradeLog) {
+  if (!id) return;
+  firestoreSet("tradeLogs", id, tradeLog);
+}
+
+function cloudLoadTradeLog(id) {
+  if (!id) return Promise.resolve(null);
+  return firestoreGet("tradeLogs", id);
+}
+
 function cloudLoadPortfolio(id) {
   if (!id) return Promise.resolve(null);
   return firestoreGet("portfolios", id);
@@ -367,6 +378,25 @@ function historyStorageKey(id) {
   return id ? "stockSupporterHistory_" + id : "stockSupporterHistory";
 }
 
+function tradeLogStorageKey(id) {
+  return id ? "stockSupporterTradeLog_" + id : "stockSupporterTradeLog";
+}
+
+function loadTradeLog(id) {
+  try {
+    return JSON.parse(localStorage.getItem(tradeLogStorageKey(id)) || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveTradeLog(tradeLog) {
+  try {
+    localStorage.setItem(tradeLogStorageKey(state.portfolioId), JSON.stringify(tradeLog));
+  } catch (e) { /* localStorage 사용 불가 시 세션 내에서만 유지 */ }
+  cloudSaveTradeLog(state.portfolioId, tradeLog);
+}
+
 function loadPortfolioHistory(id) {
   try {
     return JSON.parse(localStorage.getItem(historyStorageKey(id)) || "[]");
@@ -429,6 +459,14 @@ var state = {
   huntHarvestTab: "hunt",
   portfolioId: loadPortfolioId(),
   portfolio: loadPortfolio(loadPortfolioId()),
+  tradeLog: loadTradeLog(loadPortfolioId()),
+  showTradeJournal: false,
+  tradeJournalFilter: "",
+  tradeFormOpen: false,
+  tradeFormTicker: "",
+  tradeFormDate: "",
+  tradeFormType: "buy",
+  tradeFormError: "",
   portfolioIdInput: "",
   portfolioIdError: "",
   showPortfolioIdForm: false,
@@ -469,6 +507,13 @@ if (state.portfolioId) {
   cloudLoadHistory(state.portfolioId).then(function (cloudHistory) {
     if (cloudHistory) {
       savePortfolioHistory(state.portfolioId, cloudHistory);
+    }
+  });
+  cloudLoadTradeLog(state.portfolioId).then(function (cloudTradeLog) {
+    if (cloudTradeLog) {
+      state.tradeLog = cloudTradeLog;
+      try { localStorage.setItem(tradeLogStorageKey(state.portfolioId), JSON.stringify(cloudTradeLog)); } catch (e) {}
+      render();
     }
   });
   cloudLoadFavorites(state.portfolioId).then(function (cloudFavorites) {
@@ -677,6 +722,132 @@ function lineChartSvg(points, valueColor) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* 1페이지 상단: 오늘의 시장 대시보드                                        */
+/* ------------------------------------------------------------------ */
+function marketSummaryHtml() {
+  if (typeof MARKET_SUMMARY === "undefined" || !MARKET_SUMMARY) return "";
+  var ms = MARKET_SUMMARY;
+
+  function chCard(label, price, changePct, decimals) {
+    var color = (changePct === null || changePct === undefined) ? "#8B93A1" : (changePct >= 0 ? "#E24B4A" : "#4C8DFF");
+    var priceStr = typeof price === "number"
+      ? price.toLocaleString(undefined, { minimumFractionDigits: decimals || 0, maximumFractionDigits: decimals || 2 })
+      : "-";
+    var changeHtml = (changePct === null || changePct === undefined)
+      ? ""
+      : '<div style="font-size:11px;font-weight:600;color:' + color + ';margin-top:2px">' + fmtPct(changePct) + '</div>';
+    return (
+      '<div style="background:#1B1F26;border-radius:12px;padding:11px 12px">' +
+        '<div style="font-size:11px;color:#8B93A1;margin-bottom:4px">' + esc(label) + '</div>' +
+        '<div style="font-size:14.5px;font-weight:700;color:#F5F6F8">' + priceStr + '</div>' +
+        changeHtml +
+      '</div>'
+    );
+  }
+
+  var spreadHtml = "";
+  if (ms.rateSpread) {
+    var inverted = ms.rateSpread.value < 0;
+    var spreadColor = inverted ? "#E9C77A" : "#5DCAA5";
+    var spreadLabel = inverted ? "역전 (경기침체 신호)" : "정상";
+    spreadHtml =
+      '<div style="background:#1B1F26;border-radius:12px;padding:11px 12px">' +
+        '<div style="font-size:11px;color:#8B93A1;margin-bottom:4px">장단기 금리차(' + esc(ms.rateSpread.label || "10Y-3M") + ')</div>' +
+        '<div style="font-size:14.5px;font-weight:700;color:' + spreadColor + '">' + (ms.rateSpread.value >= 0 ? "+" : "") + ms.rateSpread.value.toFixed(2) + '%p</div>' +
+        '<div style="font-size:11px;font-weight:600;color:' + spreadColor + ';margin-top:2px">' + spreadLabel + '</div>' +
+      '</div>';
+  }
+
+  var idx = ms.indices || {};
+  return (
+    '<div class="card" style="padding:16px;margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+        '<div style="font-size:13px;font-weight:500;color:#B9C0CC">오늘의 시장</div>' +
+        (ms.asOf ? '<div style="font-size:10.5px;color:#5B6270">' + esc(ms.asOf) + ' 기준</div>' : "") +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
+        spreadHtml +
+        (ms.vix ? chCard("VIX (변동성지수)", ms.vix.price, ms.vix.changePct, 2) : "") +
+        (ms.oil ? chCard("WTI 유가($)", ms.oil.price, ms.oil.changePct, 2) : "") +
+        (ms.dollarIndex ? chCard("달러인덱스(DXY)", ms.dollarIndex.price, ms.dollarIndex.changePct, 2) : "") +
+      '</div>' +
+      '<div style="height:1px;background:#22262E;margin-bottom:12px"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        (idx.sp500 ? chCard("S&P500", idx.sp500.price, idx.sp500.changePct, 0) : "") +
+        (idx.nasdaq ? chCard("나스닥종합", idx.nasdaq.price, idx.nasdaq.changePct, 0) : "") +
+        (idx.kospi ? chCard("코스피", idx.kospi.price, idx.kospi.changePct, 0) : "") +
+        (idx.nikkei ? chCard("니케이225", idx.nikkei.price, idx.nikkei.changePct, 0) : "") +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function themeSentimentHtml() {
+  var themes = THEMES.filter(function (t) { return t !== "전체"; });
+  var stats = themes.map(function (t) {
+    var list = state.stocks.filter(function (s) { return s.theme === t && s.changePct !== null && s.changePct !== undefined; });
+    if (list.length === 0) return null;
+    var avg = list.reduce(function (sum, s) { return sum + s.changePct; }, 0) / list.length;
+    return { theme: t, avg: avg };
+  }).filter(function (x) { return x !== null; });
+  if (stats.length === 0) return "";
+  stats.sort(function (a, b) { return b.avg - a.avg; });
+  var maxAbs = Math.max.apply(null, stats.map(function (x) { return Math.abs(x.avg); })) || 1;
+
+  var rowsHtml = stats.map(function (x) {
+    var color = x.avg >= 0 ? "#E24B4A" : "#4C8DFF";
+    var widthPct = Math.min(100, (Math.abs(x.avg) / maxAbs) * 100) / 2;
+    return (
+      '<div style="display:flex;align-items:center;gap:8px;padding:6px 0">' +
+        '<div style="width:66px;font-size:12px;color:#B9C0CC;flex-shrink:0">' + esc(x.theme) + '</div>' +
+        '<div style="flex:1;height:8px;background:#1B1F26;border-radius:4px;overflow:hidden;position:relative">' +
+          '<div style="position:absolute;top:0;' + (x.avg >= 0 ? "left:50%" : "right:50%") + ';width:' + widthPct + '%;height:100%;background:' + color + '"></div>' +
+          '<div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:#2A2F38"></div>' +
+        '</div>' +
+        '<div style="width:46px;text-align:right;font-size:12px;font-weight:600;color:' + color + '">' + fmtPct(x.avg) + '</div>' +
+      '</div>'
+    );
+  }).join("");
+
+  return (
+    '<div class="card" style="padding:16px;margin-bottom:14px">' +
+      '<div style="font-size:13px;font-weight:500;color:#B9C0CC;margin-bottom:10px">테마별 분위기</div>' +
+      rowsHtml +
+    '</div>'
+  );
+}
+
+function marketBreadthHtml() {
+  var withChange = state.stocks.filter(function (s) { return s.changePct !== null && s.changePct !== undefined; });
+  if (withChange.length === 0) return "";
+  var up = withChange.filter(function (s) { return s.changePct > 0; }).length;
+  var down = withChange.filter(function (s) { return s.changePct < 0; }).length;
+  var flat = withChange.length - up - down;
+  var total = withChange.length;
+  var upPct = (up / total) * 100;
+  var downPct = (down / total) * 100;
+
+  return (
+    '<div class="card" style="padding:16px;margin-bottom:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+        '<div style="font-size:13px;font-weight:500;color:#B9C0CC">시장폭 (상승 · 하락 종목 수)</div>' +
+        '<div style="font-size:11px;color:#5B6270">전체 ' + total + '개</div>' +
+      '</div>' +
+      '<div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin-bottom:8px">' +
+        '<div style="width:' + upPct + '%;background:#E24B4A"></div>' +
+        '<div style="width:' + (100 - upPct - downPct) + '%;background:#2A2F38"></div>' +
+        '<div style="width:' + downPct + '%;background:#4C8DFF"></div>' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px">' +
+        '<span style="color:#E24B4A;font-weight:600">상승 ' + up + '개 (' + upPct.toFixed(0) + '%)</span>' +
+        '<span style="color:#8B93A1">보합 ' + flat + '개</span>' +
+        '<span style="color:#4C8DFF;font-weight:600">하락 ' + down + '개 (' + downPct.toFixed(0) + '%)</span>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
 function beginnerPageHtml() {
   var nh = HISTORICAL_RETURNS.nasdaq;
   var gh = HISTORICAL_RETURNS.gold;
@@ -686,6 +857,16 @@ function beginnerPageHtml() {
   var profitRateG = btG.invested > 0 ? (btG.profit / btG.invested) * 100 : 0;
   return (
     '<div class="page">' +
+      '<div style="margin-bottom:18px">' +
+        '<div class="page-title" style="margin-bottom:6px">오늘의 시장 한눈에 보기</div>' +
+        '<div style="font-size:13.5px;color:#8B93A1;line-height:1.6">주요 거시지표와 테마별 분위기, 시장폭을 통해 오늘 시장 상황을 빠르게 파악해보세요.</div>' +
+      '</div>' +
+      marketSummaryHtml() +
+      themeSentimentHtml() +
+      marketBreadthHtml() +
+
+      '<div style="height:1px;background:#22262E;margin:4px 0 20px"></div>' +
+
       '<div style="margin-bottom:18px">' +
         '<div class="page-title" style="margin-bottom:6px">초보자에게 가장 추천하는 방식</div>' +
         '<div style="font-size:13.5px;color:#8B93A1;line-height:1.6">개별 종목을 고르기 어렵다면, QQQ(나스닥100 ETF)를 정해진 금액만큼 정해진 주기로 꾸준히 매수하는 <b style="color:#B9C0CC">적립식 DCA</b> 방식을 권장합니다. 매수 타이밍 고민 없이 시장 평균 성장을 따라가는 전략입니다.</div>' +
@@ -986,6 +1167,107 @@ function saveAddToPortfolio() {
   render();
 }
 
+/* ------------------------------------------------------------------ */
+/* 매매일지: 거래 기록을 남기면 보유수량·평단가에 자동 반영                       */
+/* ------------------------------------------------------------------ */
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function openTradeJournal() {
+  state.showTradeJournal = true;
+  state.tradeFormOpen = false;
+  render();
+}
+
+function closeTradeJournal() {
+  state.showTradeJournal = false;
+  state.tradeFormOpen = false;
+  render();
+}
+
+function setTradeJournalFilter(ticker) {
+  state.tradeJournalFilter = ticker;
+  render();
+}
+
+function toggleTradeForm() {
+  state.tradeFormOpen = !state.tradeFormOpen;
+  if (state.tradeFormOpen) {
+    state.tradeFormTicker = state.tradeJournalFilter || (state.portfolio[0] ? state.portfolio[0].ticker : "");
+    state.tradeFormDate = todayIso();
+    state.tradeFormType = "buy";
+    state.tradeFormError = "";
+  }
+  render();
+}
+
+function setTradeFormType(type) {
+  state.tradeFormType = type;
+  render();
+}
+
+function setTradeFormTicker(ticker) {
+  state.tradeFormTicker = ticker;
+}
+
+function saveTradeEntry() {
+  var ticker = state.tradeFormTicker;
+  var dateInput = document.getElementById("trade-date-input");
+  var qtyInput = document.getElementById("trade-qty-input");
+  var priceInput = document.getElementById("trade-price-input");
+  var memoInput = document.getElementById("trade-memo-input");
+  var date = dateInput ? dateInput.value : "";
+  var qty = parseFloat(qtyInput ? qtyInput.value : "");
+  var price = parseFloat(priceInput ? priceInput.value : "");
+  var memo = memoInput ? memoInput.value.trim() : "";
+  var type = state.tradeFormType;
+  var stock = getStockOrCash(ticker);
+
+  if (!stock || !date || !qty || qty <= 0 || !price || price <= 0) {
+    state.tradeFormError = "종목·날짜·수량·가격을 모두 입력해주세요.";
+    render();
+    return;
+  }
+
+  var existing = state.portfolio.filter(function (h) { return h.ticker === ticker; })[0];
+  var entry = { id: Date.now() + Math.random(), ticker: ticker, date: date, type: type, qty: qty, price: price, memo: memo };
+
+  if (type === "buy") {
+    if (existing) {
+      var totalQty = existing.qty + qty;
+      existing.avgPrice = (existing.qty * existing.avgPrice + qty * price) / totalQty;
+      existing.qty = totalQty;
+    } else {
+      state.portfolio.push({ ticker: ticker, qty: qty, avgPrice: price });
+    }
+  } else {
+    if (!existing || existing.qty < qty) {
+      state.tradeFormError = "보유수량보다 많이 매도할 수 없습니다. (현재 보유: " + (existing ? existing.qty : 0) + ")";
+      render();
+      return;
+    }
+    entry.realizedPL = qty * (price - existing.avgPrice);
+    existing.qty -= qty;
+    if (existing.qty <= 0) {
+      state.portfolio = state.portfolio.filter(function (h) { return h.ticker !== ticker; });
+    }
+  }
+
+  state.tradeLog.push(entry);
+  saveTradeLog(state.tradeLog);
+  savePortfolio(state.portfolio);
+  state.tradeFormOpen = false;
+  state.tradeFormError = "";
+  render();
+}
+
+function removeTradeEntry(id) {
+  state.tradeLog = state.tradeLog.filter(function (t) { return String(t.id) !== String(id); });
+  saveTradeLog(state.tradeLog);
+  render();
+}
+
 function confirmPortfolioId() {
   var input = document.getElementById("portfolio-id-input");
   var pwInput = document.getElementById("portfolio-id-password-input");
@@ -1036,6 +1318,7 @@ function proceedWithPortfolioIdSwitch(id) {
   savePortfolioId(id);
   state.portfolio = loadPortfolio(id);
   state.favorites = loadFavorites(id);
+  state.tradeLog = loadTradeLog(id);
   state.showPortfolioIdForm = false;
   state.portfolioIdError = "";
   render();
@@ -1055,6 +1338,15 @@ function proceedWithPortfolioIdSwitch(id) {
       savePortfolioHistory(id, cloudHistory);
     } else {
       cloudSaveHistory(id, loadPortfolioHistory(id));
+    }
+    return cloudLoadTradeLog(id);
+  }).then(function (cloudTradeLog) {
+    if (cloudTradeLog) {
+      state.tradeLog = cloudTradeLog;
+      try { localStorage.setItem(tradeLogStorageKey(id), JSON.stringify(cloudTradeLog)); } catch (e) {}
+    } else {
+      state.tradeLog = loadTradeLog(id);
+      cloudSaveTradeLog(id, state.tradeLog);
     }
     return cloudLoadFavorites(id);
   }).then(function (cloudFavorites) {
@@ -1103,18 +1395,21 @@ function savePasswordForm() {
 function resetCurrentPortfolio() {
   var id = state.portfolioId;
   if (!id) return;
-  var ok = window.confirm("포트폴리오 ID " + id + "의 데이터(포트폴리오·자산추이·즐겨찾기)를 완전히 삭제하고 빈 상태로 되돌립니다. 계속할까요?");
+  var ok = window.confirm("포트폴리오 ID " + id + "의 데이터(포트폴리오·자산추이·즐겨찾기·매매일지)를 완전히 삭제하고 빈 상태로 되돌립니다. 계속할까요?");
   if (!ok) return;
   try {
     localStorage.removeItem(portfolioStorageKey(id));
     localStorage.removeItem(historyStorageKey(id));
     localStorage.removeItem(favoritesStorageKey(id));
+    localStorage.removeItem(tradeLogStorageKey(id));
   } catch (e) {}
   state.portfolio = [];
   state.favorites = {};
+  state.tradeLog = [];
   firestoreDelete("portfolios", id);
   firestoreDelete("history", id);
   firestoreDelete("favorites", id);
+  firestoreDelete("tradeLogs", id);
   render();
 }
 
@@ -1267,11 +1562,18 @@ function valueInKRW(r, rate) {
   return r.stock.market === "KR" ? r.marketValue : r.marketValue * rate;
 }
 
+var BTC_ICON_HTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#F7931A;color:#fff;font-size:10px;font-weight:800;vertical-align:middle;margin-right:2px">\u20BF</span>';
+var KRW_ICON_HTML = '<span style="display:inline-block;position:relative;width:19px;height:14px;vertical-align:middle;margin-right:4px">' +
+  '<span style="position:absolute;left:4px;top:3px;width:14px;height:10px;background:#B8952E;border-radius:2px"></span>' +
+  '<span style="position:absolute;left:2px;top:1.5px;width:14px;height:10px;background:#D4AF37;border-radius:2px"></span>' +
+  '<span style="position:absolute;left:0;top:0;width:14px;height:10px;background:#F0D060;border-radius:2px;color:#5c4300;font-size:7.5px;font-weight:800;line-height:10px;text-align:center">\u20A9</span>' +
+'</span>';
+
 var PORTFOLIO_GROUPS = [
   { key: "KR", label: "\uD83C\uDDF0\uD83C\uDDF7 국내", isKR: true },
   { key: "US", label: "\uD83C\uDDFA\uD83C\uDDF8 해외", isKR: false },
-  { key: "CRYPTO", label: "\uD83E\uDE99 가상자산", isKR: false },
-  { key: "CASH_KRW", label: "\uD83D\uDCB5 현금(원화)", isKR: true },
+  { key: "CRYPTO", label: BTC_ICON_HTML + '가상자산', isKR: false },
+  { key: "CASH_KRW", label: KRW_ICON_HTML + '현금(원화)', isKR: true },
   { key: "CASH_USD", label: "\uD83D\uDCB5 현금(달러)", isKR: false }
 ];
 
@@ -1396,8 +1698,10 @@ function portfolioPageHtml() {
 
   var allocationChartHtml = portfolioAllocationChartHtml(rows, rate);
   var detailButtonHtml = rows.length > 0
-    ? '<button data-action="open-portfolio-detail" style="width:100%;padding:12px;border-radius:10px;border:1px solid #2A2F38;background:#1B1F26;color:#F5F6F8;font-weight:600;cursor:pointer;font-size:13px;margin-bottom:16px">\u{1F50D} 섹터 · 실제 노출 종목 보기</button>'
+    ? '<button data-action="open-portfolio-detail" style="width:100%;padding:12px;border-radius:10px;border:1px solid #2A2F38;background:#1B1F26;color:#F5F6F8;font-weight:600;cursor:pointer;font-size:13px;margin-bottom:10px">\u{1F50D} 섹터 · 실제 노출 종목 보기</button>'
     : "";
+  var tradeJournalButtonHtml =
+    '<button data-action="open-trade-journal" style="width:100%;padding:13px;border-radius:10px;border:1px solid #4C8DFF;background:linear-gradient(135deg,#1B2436,#182238);color:#F5F6F8;font-weight:700;cursor:pointer;font-size:13.5px;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:6px">\u{1F4DD} 매매일지 작성하기</button>';
   var sortControlHtml = rows.length > 0
     ? '<div style="display:flex;justify-content:flex-end;margin-bottom:10px">' +
         '<div style="display:flex;background:#15181D;border:1px solid #2A2F38;border-radius:8px;padding:2px">' +
@@ -1486,6 +1790,7 @@ function portfolioPageHtml() {
       totalSummaryHtml +
       allocationChartHtml +
       detailButtonHtml +
+      tradeJournalButtonHtml +
       emptyHtml +
       sortControlHtml +
       portfolioGroupsHtml +
@@ -1692,6 +1997,91 @@ function addToPortfolioModalHtml() {
         '</div>' +
         (state.addToPortfolioError ? '<div style="font-size:11px;color:#E24B4A;margin-bottom:10px">' + esc(state.addToPortfolioError) + '</div>' : "") +
         '<button data-action="save-add-to-portfolio" style="width:100%;padding:10px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13px">추가</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function tradeJournalModalHtml() {
+  var krStocks = state.stocks.filter(function (s) { return s.market === "KR"; }).slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+  var usStocks = state.stocks.filter(function (s) { return s.market === "US"; }).slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
+  var tickerOptionsHtml =
+    '<optgroup label="국내">' + krStocks.map(function (s) { return '<option value="' + esc(s.ticker) + '"' + (s.ticker === state.tradeFormTicker ? " selected" : "") + '>' + esc(s.name) + '</option>'; }).join("") + '</optgroup>' +
+    '<optgroup label="해외">' + usStocks.map(function (s) { return '<option value="' + esc(s.ticker) + '"' + (s.ticker === state.tradeFormTicker ? " selected" : "") + '>' + esc(s.name) + '</option>'; }).join("") + '</optgroup>';
+
+  var heldTickers = {};
+  state.portfolio.forEach(function (h) { if (h.ticker !== "CASH_KRW" && h.ticker !== "CASH_USD") heldTickers[h.ticker] = true; });
+  state.tradeLog.forEach(function (t) { heldTickers[t.ticker] = true; });
+  var filterTickers = Object.keys(heldTickers).map(function (t) { return getStockOrCash(t); }).filter(function (s) { return !!s; })
+    .sort(function (a, b) { return a.name.localeCompare(b.name); });
+
+  var filterChipsHtml =
+    '<button data-action="set-trade-journal-filter" data-ticker="" style="padding:5px 11px;border-radius:8px;border:1px solid ' + (state.tradeJournalFilter === "" ? "#4C8DFF" : "#2A2F38") + ';background:' + (state.tradeJournalFilter === "" ? "rgba(76,141,255,0.12)" : "#15181D") + ';color:' + (state.tradeJournalFilter === "" ? "#4C8DFF" : "#8B93A1") + ';font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">전체</button>' +
+    filterTickers.map(function (s) {
+      var active = state.tradeJournalFilter === s.ticker;
+      return '<button data-action="set-trade-journal-filter" data-ticker="' + esc(s.ticker) + '" style="padding:5px 11px;border-radius:8px;border:1px solid ' + (active ? "#4C8DFF" : "#2A2F38") + ';background:' + (active ? "rgba(76,141,255,0.12)" : "#15181D") + ';color:' + (active ? "#4C8DFF" : "#8B93A1") + ';font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">' + esc(s.name) + '</button>';
+    }).join("");
+
+  var formHtml = "";
+  if (state.tradeFormOpen) {
+    formHtml =
+      '<div style="background:#1B1F26;border-radius:12px;padding:14px;margin-bottom:14px">' +
+        '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+          '<button data-action="set-trade-type" data-type="buy" style="flex:1;padding:8px;border-radius:8px;border:1px solid ' + (state.tradeFormType === "buy" ? "#1D9E75" : "#2A2F38") + ';background:' + (state.tradeFormType === "buy" ? "rgba(29,158,117,0.12)" : "#15181D") + ';color:' + (state.tradeFormType === "buy" ? "#5DCAA5" : "#8B93A1") + ';font-weight:600;font-size:13px;cursor:pointer">매수</button>' +
+          '<button data-action="set-trade-type" data-type="sell" style="flex:1;padding:8px;border-radius:8px;border:1px solid ' + (state.tradeFormType === "sell" ? "#E24B4A" : "#2A2F38") + ';background:' + (state.tradeFormType === "sell" ? "rgba(226,75,74,0.12)" : "#15181D") + ';color:' + (state.tradeFormType === "sell" ? "#F0997B" : "#8B93A1") + ';font-weight:600;font-size:13px;cursor:pointer">매도</button>' +
+        '</div>' +
+        '<select id="trade-ticker-select" data-action="trade-ticker-select" style="width:100%;box-sizing:border-box;margin-bottom:8px">' + tickerOptionsHtml + '</select>' +
+        '<input type="date" id="trade-date-input" value="' + esc(state.tradeFormDate) + '" style="width:100%;box-sizing:border-box;margin-bottom:8px">' +
+        '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+          '<input type="number" id="trade-qty-input" placeholder="수량" style="flex:1;min-width:0;box-sizing:border-box">' +
+          '<input type="number" id="trade-price-input" placeholder="가격" style="flex:1;min-width:0;box-sizing:border-box">' +
+        '</div>' +
+        '<textarea id="trade-memo-input" placeholder="메모 (매수/매도 이유, 생각 등)" style="width:100%;box-sizing:border-box;min-height:60px;resize:vertical;margin-bottom:8px"></textarea>' +
+        (state.tradeFormError ? '<div style="font-size:11px;color:#E24B4A;margin-bottom:8px">' + esc(state.tradeFormError) + '</div>' : "") +
+        '<button data-action="save-trade-entry" style="width:100%;padding:10px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13px">기록 저장</button>' +
+      '</div>';
+  }
+
+  var entries = state.tradeLog.filter(function (t) { return state.tradeJournalFilter === "" || t.ticker === state.tradeJournalFilter; })
+    .slice().sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+
+  var entriesHtml = entries.length === 0
+    ? '<div style="text-align:center;color:#5B6270;font-size:12.5px;padding:24px 0">아직 기록된 거래가 없습니다.</div>'
+    : entries.map(function (t) {
+        var s = getStockOrCash(t.ticker);
+        var isKR = s ? s.market === "KR" : true;
+        var priceDisp = fmtMoney(t.price, isKR);
+        var typeColor = t.type === "buy" ? "#5DCAA5" : "#F0997B";
+        var realizedHtml = (t.type === "sell" && typeof t.realizedPL === "number")
+          ? '<span style="font-size:11.5px;font-weight:600;color:' + (t.realizedPL >= 0 ? "#E24B4A" : "#4C8DFF") + '">실현손익 ' + (t.realizedPL >= 0 ? "+" : "") + fmtMoney(t.realizedPL, isKR) + '</span>'
+          : "";
+        return (
+          '<div style="padding:10px 0;border-bottom:1px solid #22262E">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
+              '<div style="font-size:12.5px;color:#F5F6F8;font-weight:600">' + esc(s ? s.name : t.ticker) + ' <span style="color:#5B6270;font-weight:400">' + esc(t.date) + '</span></div>' +
+              '<button data-action="remove-trade-entry" data-id="' + t.id + '" style="background:none;border:none;color:#5B6270;font-size:16px;cursor:pointer;padding:2px;line-height:1">&times;</button>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;flex-wrap:wrap;gap:4px">' +
+              '<span style="font-size:12px;font-weight:600;color:' + typeColor + '">' + (t.type === "buy" ? "매수" : "매도") + ' ' + t.qty + '주 · ' + priceDisp + '</span>' +
+              realizedHtml +
+            '</div>' +
+            (t.memo ? '<div style="font-size:11.5px;color:#8B93A1;margin-top:4px;line-height:1.5">' + esc(t.memo) + '</div>' : "") +
+          '</div>'
+        );
+      }).join("");
+
+  return (
+    '<div class="modal-backdrop" data-action="close-trade-journal">' +
+      '<div class="modal-sheet" data-action="stop">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+          '<div style="font-size:17px;font-weight:700;color:#F5F6F8">\u{1F4DD} 매매일지</div>' +
+          '<button class="close-btn" data-action="close-trade-journal">&times;</button>' +
+        '</div>' +
+        '<div class="info-box" style="margin-bottom:14px">거래를 기록하면 매수는 보유수량·평단가에, 매도는 보유수량과 실현손익에 자동으로 반영됩니다.</div>' +
+        '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:12px">' + filterChipsHtml + '</div>' +
+        '<button data-action="toggle-trade-form" style="width:100%;padding:11px;border-radius:10px;border:1px solid ' + (state.tradeFormOpen ? "#4C8DFF;background:#1B2436" : "#2A2F38;background:#1B1F26") + ';color:#F5F6F8;font-weight:600;cursor:pointer;font-size:13px;margin-bottom:14px">' + (state.tradeFormOpen ? "닫기" : "+ 거래 기록 추가") + '</button>' +
+        formHtml +
+        entriesHtml +
       '</div>' +
     '</div>'
   );
@@ -1987,6 +2377,8 @@ function render() {
     modalHtml = passwordFormHtml();
   } else if (state.addToPortfolioTicker) {
     modalHtml = addToPortfolioModalHtml();
+  } else if (state.showTradeJournal) {
+    modalHtml = tradeJournalModalHtml();
   }
   var uploadHtml = state.showUpload ? uploadModalHtml() : "";
   var gaugeSectionHtml = state.page === 0 ? '<div style="padding:10px 16px 0">' + gaugeHtml(fgScore) + '</div>' : "";
@@ -2357,6 +2749,20 @@ document.addEventListener("click", function (e) {
     savePasswordForm();
   } else if (action === "reset-portfolio") {
     resetCurrentPortfolio();
+  } else if (action === "open-trade-journal") {
+    openTradeJournal();
+  } else if (action === "close-trade-journal") {
+    if (e.target === el) closeTradeJournal();
+  } else if (action === "toggle-trade-form") {
+    toggleTradeForm();
+  } else if (action === "set-trade-type") {
+    setTradeFormType(el.getAttribute("data-type"));
+  } else if (action === "set-trade-journal-filter") {
+    setTradeJournalFilter(el.getAttribute("data-ticker"));
+  } else if (action === "save-trade-entry") {
+    saveTradeEntry();
+  } else if (action === "remove-trade-entry") {
+    removeTradeEntry(el.getAttribute("data-id"));
   } else if (action === "stop") {
     e.stopPropagation();
   }
@@ -2369,6 +2775,8 @@ document.addEventListener("input", function (e) {
   } else if (e.target.getAttribute("data-action") === "dca-years") {
     state.dcaYears = parseInt(e.target.value, 10);
     render();
+  } else if (e.target.getAttribute("data-action") === "trade-ticker-select") {
+    setTradeFormTicker(e.target.value);
   }
 });
 
@@ -2470,7 +2878,7 @@ window.addEventListener("online", syncLiveData);
     // 상세정보 등 모달이 열려있으면 body 스크롤이 막혀(overflow:hidden) atTop()이
     // 항상 true가 되어버려, 모달 내부 스크롤만 해도 당겨서 새로고침이 오작동한다.
     return !!(state.selectedTicker || state.showPortfolioDetail || state.editingTicker ||
-      state.showPasswordForm || state.addToPortfolioTicker || state.showUpload);
+      state.showPasswordForm || state.addToPortfolioTicker || state.showUpload || state.showTradeJournal);
   }
   function setPull(px, animate) {
     ptr.style.transition = animate ? "transform 0.2s ease-out, opacity 0.2s ease-out" : "none";
