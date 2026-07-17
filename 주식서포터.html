@@ -115,6 +115,7 @@ var FEAR_GREED_DATA = {"value": 42, "label": "Fear", "timestamp": "2026-07-17T04
 
 var HISTORICAL_RETURNS = {"nasdaq": {"cagr": 0.1695, "vol": 0.01391, "years": 20.0, "asOf": "2026-07-16"}, "gold": {"cagr": 0.0923, "vol": 0.01142, "years": 20.0, "asOf": "2026-07-16"}};
 var EXCHANGE_RATE = {"usdKrw": 1480.15, "asOf": "2026-07-17"};
+var FUNDAMENTALS_DATA = {};
 // 같은 지수를 추종하는 일반/레버리지 ETF 쌍은 개별종목으로 분해하지 않고
 // 레버리지 배수(베타)를 반영한 합산 노출로 하나의 항목으로 묶어서 보여준다.
 var EXPOSURE_MERGE_GROUPS = [
@@ -1835,6 +1836,22 @@ function stockDetailHtml(stock) {
     '</div>' :
     '<div style="font-size:12px;color:#5B6270;background:#1B1F26;border-radius:12px;padding:12px 14px;margin:16px 0">적정주가/목표주가를 추적하지 않는 종목입니다 (현재가만 트래킹).</div>';
 
+  var fd = FUNDAMENTALS_DATA[s.ticker];
+  var fundamentalsBoxHtml = fd ?
+    '<div style="background:#1B1F26;border-radius:12px;padding:14px;margin-bottom:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+        '<span style="font-size:12px;color:#8B93A1">펀더멘털</span>' +
+        '<span style="font-size:11px;color:#5B6270">' + (fd.asOf ? fd.asOf + ' 기준' : "") + '</span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 14px">' +
+        '<div><div style="font-size:11px;color:#5B6270">PER</div><div style="font-size:15px;font-weight:600;color:#F5F6F8">' + (fd.per != null ? fd.per : "-") + '</div></div>' +
+        '<div><div style="font-size:11px;color:#5B6270">PEG</div><div style="font-size:15px;font-weight:600;color:#F5F6F8">' + (fd.peg != null ? fd.peg : "-") + '</div></div>' +
+        '<div><div style="font-size:11px;color:#5B6270">EPS</div><div style="font-size:15px;font-weight:600;color:#F5F6F8">' + (fd.eps != null ? fd.eps : "-") + '</div></div>' +
+        '<div><div style="font-size:11px;color:#5B6270">섹터 평균 PER' + (fd.sector ? " (" + esc(fd.sector) + ")" : "") + '</div><div style="font-size:15px;font-weight:600;color:#F5F6F8">' + (fd.sectorAvgPer != null ? fd.sectorAvgPer : "-") + '</div></div>' +
+      '</div>' +
+      (fd.nextEarnings ? '<div style="font-size:12px;color:#8B93A1;margin-top:12px;padding-top:12px;border-top:1px solid #262B33">다음 실적발표일 <span style="color:#F5F6F8;font-weight:500">' + esc(fd.nextEarnings) + '</span></div>' : "") +
+    '</div>' : "";
+
   return (
     '<div class="modal-backdrop" data-action="close-modal">' +
       '<div class="modal-sheet" data-action="stop">' +
@@ -1855,6 +1872,7 @@ function stockDetailHtml(stock) {
         technicalSummaryHtml(s, tech) +
         belowFairHtml + aboveTargetHtml +
         valuationBoxHtml +
+        fundamentalsBoxHtml +
         noteHtml +
         '<div class="info-box" style="margin-top:6px">' +
           '<span style="font-size:14px">&#9888;&#65039;</span>' +
@@ -2372,6 +2390,7 @@ function syncLiveData() {
       var mTd = text.match(/var TECHNICAL_DATA = (\{.*?\});/);
       var mEr = text.match(/var EXCHANGE_RATE = (\{.*?\});/);
       var mEh = text.match(/var ETF_HOLDINGS = (\{.*?\});/);
+      var mFd = text.match(/var FUNDAMENTALS_DATA = (\{.*?\});/);
       try {
         if (mSeed) {
           var seed = JSON.parse(mSeed[1]);
@@ -2412,6 +2431,10 @@ function syncLiveData() {
         if (mEh) {
           var eh = JSON.parse(mEh[1]);
           if (JSON.stringify(eh) !== JSON.stringify(ETF_HOLDINGS)) { ETF_HOLDINGS = eh; changed = true; }
+        }
+        if (mFd) {
+          var fd = JSON.parse(mFd[1]);
+          if (JSON.stringify(fd) !== JSON.stringify(FUNDAMENTALS_DATA)) { FUNDAMENTALS_DATA = fd; changed = true; }
         }
       } catch (e) {
         return;

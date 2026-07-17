@@ -17,6 +17,7 @@ import json
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -395,6 +396,114 @@ def double_check_us_prices(mapping_rows, seed_stocks, naver_world_quotes, thresh
     return mismatches
 
 
+def load_existing_fundamentals(html_text):
+    """기존 HTML에서 FUNDAMENTALS_DATA(PER/PEG/EPS/실적일/섹터) 를 파싱해 fallback 값으로 사용"""
+    m = re.search(r"var FUNDAMENTALS_DATA = (\{.*?\});", html_text)
+    if not m:
+        return {}
+    try:
+        return json.loads(m.group(1))
+    except json.JSONDecodeError:
+        return {}
+
+
+FUNDAMENTALS_MAX_REFRESH_PER_RUN = 40  # 야후 rate-limit 위험을 줄이기 위해 실행당 조회 개수 제한
+NO_FUNDAMENTALS_PREFIXES = ("^", "BTC-", "ETH-")  # 지수/암호화폐는 PER 등의 개념이 없음
+
+
+def fetch_one_fundamentals(yahoo_ticker):
+    """개별 종목의 PER/PEG/EPS/다음 실적발표일/섹터를 야후 파이낸스에서 조회
+    (ETF/지수/암호화폐 등 해당 데이터가 없는 종목은 None 반환)"""
+    try:
+        info = yf.Ticker(yahoo_ticker).get_info()
+    except Exception:
+        return None
+    per = info.get("trailingPE")
+    peg = info.get("trailingPegRatio")
+    if peg is None:
+        peg = info.get("pegRatio")
+    eps = info.get("trailingEps")
+    sector = info.get("sector")
+    earnings_ts = info.get("earningsTimestampStart") or info.get("earningsTimestamp")
+    next_earnings = None
+    if earnings_ts:
+        try:
+            next_earnings = datetime.fromtimestamp(earnings_ts, tz=timezone.utc).date().isoformat()
+        except Exception:
+            next_earnings = None
+    if per is None and peg is None and eps is None and sector is None:
+        return None
+    return {
+        "per": round(per, 2) if isinstance(per, (int, float)) else None,
+        "peg": round(peg, 2) if isinstance(peg, (int, float)) else None,
+        "eps": round(eps, 2) if isinstance(eps, (int, float)) else None,
+        "sector": sector,
+        "nextEarnings": next_earnings,
+    }
+
+
+def fetch_fundamentals(mapping_rows, fallback):
+    """PER/PEG/EPS/다음 실적발표일/섹터 데이터를 조회.
+    거의 매일 갱신될 정도로 느리게 바뀌는 데이터라 5분마다 전체 재조회할 필요가 없어,
+    캐시(fallback)를 기본으로 깔고 하루 지난(또는 아직 한 번도 조회 안 된) 종목만
+    실행당 최대 FUNDAMENTALS_MAX_REFRESH_PER_RUN개까지 새로 조회한다."""
+    today = date.today().isoformat()
+    result = dict(fallback)
+
+    candidates = []
+    for row in mapping_rows:
+        yahoo_ticker = row["yahoo_ticker"].strip()
+        original_ticker = row["original_ticker"].strip()
+        if not yahoo_ticker or yahoo_ticker.startswith(NO_FUNDAMENTALS_PREFIXES):
+            continue
+        cached = fallback.get(original_ticker)
+        as_of = cached.get("asOf") if cached else None
+        if as_of == today:
+            continue  # 오늘 이미 갱신됨
+        candidates.append((original_ticker, yahoo_ticker, as_of))
+
+    # 한 번도 조회 안 된 종목 최우선, 그다음 오래된 순으로 정렬해 실행당 개수 제한만큼만 조회
+    candidates.sort(key=lambda c: (c[2] is not None, c[2] or ""))
+    to_fetch = candidates[:FUNDAMENTALS_MAX_REFRESH_PER_RUN]
+    if not to_fetch:
+        return result
+
+    print(f"펀더멘털(PER/PEG/EPS/실적일/섹터) 데이터 조회 중... ({len(to_fetch)}개 티커)")
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        future_to_ticker = {
+            executor.submit(fetch_one_fundamentals, yahoo_ticker): (original_ticker, yahoo_ticker)
+            for original_ticker, yahoo_ticker, _ in to_fetch
+        }
+        for future in as_completed(future_to_ticker):
+            original_ticker, yahoo_ticker = future_to_ticker[future]
+            try:
+                data = future.result()
+            except Exception as e:
+                data = None
+                print(f"  ⚠️ '{original_ticker}'({yahoo_ticker}) 펀더멘털 조회 실패: {e}")
+            if data is not None:
+                data["asOf"] = today
+                result[original_ticker] = data
+    return result
+
+
+def apply_sector_avg_per(fundamentals):
+    """앱이 추적하는 종목들 안에서 같은 섹터끼리 PER 평균을 계산해 각 종목에 채워넣음
+    (시장 전체 섹터 평균이 아니라, 이 앱이 추적하는 종목 범위 내 근사치)"""
+    by_sector = {}
+    for data in fundamentals.values():
+        sector = data.get("sector")
+        per = data.get("per")
+        if sector and isinstance(per, (int, float)):
+            by_sector.setdefault(sector, []).append(per)
+    sector_avg = {s: round(sum(vs) / len(vs), 2) for s, vs in by_sector.items() if vs}
+    for data in fundamentals.values():
+        sector = data.get("sector")
+        if sector in sector_avg:
+            data["sectorAvgPer"] = sector_avg[sector]
+    return fundamentals
+
+
 # 국내지수를 그대로 추종해 구성종목 비중이 사실상 동일한 것으로 볼 수 있는 경우,
 # 야후 파이낸스에 데이터가 있는 해외 ETF로 대체(근사)한다.
 # 133690/418660(나스닥100+레버리지), 381170/465610(빅테크TOP+레버리지)은
@@ -705,6 +814,7 @@ def main():
     technical_fallback = load_existing_technical_data(html_text)
     exchange_rate_fallback = load_existing_exchange_rate(html_text)
     etf_holdings_fallback = load_existing_etf_holdings(html_text)
+    fundamentals_fallback = load_existing_fundamentals(html_text)
 
     fetched = fetch_all(yahoo_tickers)
     print("네이버금융 국내 종목 실시간 시세 조회 중...")
@@ -718,6 +828,9 @@ def main():
     exchange_rate = fetch_exchange_rate(exchange_rate_fallback)
     print("ETF 구성종목(TOP7) 조회 중...")
     etf_holdings = fetch_etf_holdings(mapping_rows, etf_holdings_fallback)
+
+    fundamentals = fetch_fundamentals(mapping_rows, fundamentals_fallback)
+    fundamentals = apply_sector_avg_per(fundamentals)
 
     print("나스닥100(QQQ) / 금(IAU) 지난 20년 연평균 수익률 계산 중...")
     historical_returns = {
@@ -797,6 +910,18 @@ def main():
         if eh_n == 0:
             print("🚨 HTML에서 ETF_HOLDINGS 를 찾지 못했습니다. ETF 구성종목은 갱신하지 않았습니다.")
 
+    if fundamentals:
+        fd_json = json.dumps(fundamentals, ensure_ascii=False)
+        fd_line = f"var FUNDAMENTALS_DATA = {fd_json};"
+        new_html, fd_n = re.subn(
+            r"var FUNDAMENTALS_DATA = \{.*?\};",
+            lambda _m: fd_line,
+            new_html,
+            count=1,
+        )
+        if fd_n == 0:
+            print("🚨 HTML에서 FUNDAMENTALS_DATA 를 찾지 못했습니다. 펀더멘털 데이터는 갱신하지 않았습니다.")
+
     HTML_PATH.write_text(new_html, encoding="utf-8")
     ok_count = sum(1 for t in yahoo_tickers if fetched.get(t) is not None)
     print(f"\n✅ 완료: {ok_count}/{len(yahoo_tickers)}개 종목 최신 데이터 반영, {HTML_PATH} 저장됨")
@@ -814,6 +939,8 @@ def main():
     print(f"   네이버 실시간 시세: {len(naver_quotes)}/{kr_count}개 국내 종목")
     us_count = sum(1 for r in mapping_rows if r["market"].strip() == "US")
     print(f"   네이버 해외증시 더블체크: {len(naver_world_quotes)}/{us_count}개 미국 종목")
+    fundamentals_count = sum(1 for r in mapping_rows if not r["yahoo_ticker"].strip().startswith(NO_FUNDAMENTALS_PREFIXES))
+    print(f"   펀더멘털(PER/PEG/EPS/실적일/섹터) 데이터: {len(fundamentals)}/{fundamentals_count}개 종목")
 
 
 if __name__ == "__main__":
