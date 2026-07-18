@@ -1,0 +1,55 @@
+# 하루 1회(오전 5시, KST) 전체 종목 펀더멘털(PER/PEG/EPS/실적일/섹터) 갱신
+# 가격/RSI는 5분 주기 update-stock-data.yml 이 담당하고, 펀더멘털은 실시간성이
+# 필요 없는 데이터라 여기서 하루 한 번 전체 종목을 훑는다. (종목 수가 늘어도
+# 5분 주기 작업에는 영향이 없어 버벅임/rate-limit 위험이 커지지 않는다)
+name: Update Fundamentals Daily
+
+on:
+  schedule:
+    - cron: "0 20 * * *" # 20:00 UTC = 05:00 KST
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-fundamentals-daily
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install pandas requests yfinance
+
+      - name: Run update script (full fundamentals)
+        run: python3 update_stock_data.py --full-fundamentals
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- 주식서포터.html; then
+            echo "변경 없음, 커밋 생략"
+            exit 0
+          fi
+          git add 주식서포터.html
+          git commit -m "chore: 펀더멘털(PER/PEG/EPS/실적일/섹터) 전체 갱신 [skip ci]"
+          for i in 1 2 3 4 5; do
+            if git push; then
+              exit 0
+            fi
+            echo "push 실패, 최신 원격 반영 후 재시도 ($i/5)"
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; git reset --soft origin/main; git add 주식서포터.html; git commit -m "chore: 펀더멘털(PER/PEG/EPS/실적일/섹터) 전체 갱신 [skip ci]"; }
+            sleep 5
+          done
+          echo "push 최종 실패"
+          exit 1

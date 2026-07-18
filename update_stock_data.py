@@ -7,9 +7,10 @@
 - 주식서포터.html 안의 SEED_STOCKS 배열을 최신 값으로 교체
 
 사용법:
-  ./venv/bin/python3 update_stock_data.py
+  ./venv/bin/python3 update_stock_data.py                     # 가격/RSI/차트 등 갱신 (5분 주기 크론용, 펀더멘털은 캐시 유지)
+  ./venv/bin/python3 update_stock_data.py --full-fundamentals # 위 내용 + 전체 종목 펀더멘털(PER/PEG/EPS 등) 전체 갱신 (하루 1회 크론용)
 
-매주 재실행하면 됩니다. (같은 폴더의 venv 사용 권장: yfinance 설치되어 있음)
+(같은 폴더의 venv 사용 권장: yfinance 설치되어 있음)
 """
 
 import csv
@@ -494,7 +495,6 @@ def load_existing_fundamentals(html_text):
         return {}
 
 
-FUNDAMENTALS_MAX_REFRESH_PER_RUN = 40  # 야후 rate-limit 위험을 줄이기 위해 실행당 조회 개수 제한
 NO_FUNDAMENTALS_PREFIXES = ("^", "BTC-", "ETH-")  # 지수/암호화폐는 PER 등의 개념이 없음
 
 
@@ -531,11 +531,14 @@ def fetch_one_fundamentals(yahoo_ticker):
     }
 
 
-def fetch_fundamentals(mapping_rows, fallback):
+def fetch_fundamentals(mapping_rows, fallback, full=False):
     """PER/PEG/EPS/다음 실적발표일/섹터 데이터를 조회.
-    거의 매일 갱신될 정도로 느리게 바뀌는 데이터라 5분마다 전체 재조회할 필요가 없어,
-    캐시(fallback)를 기본으로 깔고 하루 지난(또는 아직 한 번도 조회 안 된) 종목만
-    실행당 최대 FUNDAMENTALS_MAX_REFRESH_PER_RUN개까지 새로 조회한다."""
+    실시간성이 필요 없는 데이터라, 하루 한 번 전용 스케줄(--full-fundamentals)에서만
+    전체 종목을 훑고, 5분마다 도는 일반 실행에서는 아예 조회하지 않는다
+    (캐시된 값을 그대로 유지해 야후 rate-limit 부담과 실행 시간을 줄인다)."""
+    if not full:
+        return dict(fallback)
+
     today = date.today().isoformat()
     result = dict(fallback)
 
@@ -551,9 +554,9 @@ def fetch_fundamentals(mapping_rows, fallback):
             continue  # 오늘 이미 갱신됨
         candidates.append((original_ticker, yahoo_ticker, as_of))
 
-    # 한 번도 조회 안 된 종목 최우선, 그다음 오래된 순으로 정렬해 실행당 개수 제한만큼만 조회
+    # 한 번도 조회 안 된 종목 최우선, 그다음 오래된 순으로 조회 (--full-fundamentals 실행에서는 전부 조회)
     candidates.sort(key=lambda c: (c[2] is not None, c[2] or ""))
-    to_fetch = candidates[:FUNDAMENTALS_MAX_REFRESH_PER_RUN]
+    to_fetch = candidates
     if not to_fetch:
         return result
 
@@ -876,6 +879,8 @@ def build_technical_data(mapping_rows, fetched, fallback):
 
 
 def main():
+    full_fundamentals = "--full-fundamentals" in sys.argv
+
     mapping_rows = load_mapping()
     yahoo_tickers = [r["yahoo_ticker"].strip() for r in mapping_rows if r["yahoo_ticker"].strip()]
 
@@ -904,7 +909,7 @@ def main():
     print("ETF 구성종목(TOP7) 조회 중...")
     etf_holdings = fetch_etf_holdings(mapping_rows, etf_holdings_fallback)
 
-    fundamentals = fetch_fundamentals(mapping_rows, fundamentals_fallback)
+    fundamentals = fetch_fundamentals(mapping_rows, fundamentals_fallback, full=full_fundamentals)
 
     print("나스닥100(QQQ) / 금(IAU) 지난 20년 연평균 수익률 계산 중...")
     historical_returns = {
@@ -1029,7 +1034,8 @@ def main():
     us_count = sum(1 for r in mapping_rows if r["market"].strip() == "US")
     print(f"   네이버 해외증시 더블체크: {len(naver_world_quotes)}/{us_count}개 미국 종목")
     fundamentals_count = sum(1 for r in mapping_rows if not r["yahoo_ticker"].strip().startswith(NO_FUNDAMENTALS_PREFIXES))
-    print(f"   펀더멘털(PER/PEG/EPS/실적일/섹터) 데이터: {len(fundamentals)}/{fundamentals_count}개 종목")
+    fundamentals_note = "" if full_fundamentals else " (캐시 유지, --full-fundamentals 실행 시에만 갱신)"
+    print(f"   펀더멘털(PER/PEG/EPS/실적일/섹터) 데이터: {len(fundamentals)}/{fundamentals_count}개 종목{fundamentals_note}")
 
 
 if __name__ == "__main__":
