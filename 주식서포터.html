@@ -1016,10 +1016,9 @@ function marketBreadthHtml() {
   );
 }
 
-// 달러 금액을 원화 기준 만원 단위 문자열로 변환 (시뮬레이션은 원화 기준으로 보여줌)
-function toManwon(usd) {
-  var rate = (typeof EXCHANGE_RATE !== "undefined") ? EXCHANGE_RATE.usdKrw : 1450;
-  return (usd * rate / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 });
+// 원화 금액을 만원 단위 문자열로 변환
+function toManwon(won) {
+  return (won / 10000).toLocaleString(undefined, { maximumFractionDigits: 1 });
 }
 
 function beginnerPageHtml() {
@@ -1048,8 +1047,8 @@ function beginnerPageHtml() {
       '<div class="card" style="padding:18px;margin-bottom:16px">' +
         '<div style="font-size:13px;font-weight:500;color:#B9C0CC;margin-bottom:12px">시뮬레이션 조건</div>' +
         '<div style="margin-bottom:14px">' +
-          '<div style="display:flex;justify-content:space-between;font-size:13px;color:#8B93A1;margin-bottom:6px"><span>매일 매수 금액</span><span style="color:#F5F6F8;font-weight:500">' + toManwon(state.dcaAmount * 1000) + '만원</span></div>' +
-          '<input type="range" min="1" max="50" step="1" value="' + state.dcaAmount + '" data-action="dca-amount">' +
+          '<div style="display:flex;justify-content:space-between;font-size:13px;color:#8B93A1;margin-bottom:6px"><span>매일 매수 금액</span><span style="color:#F5F6F8;font-weight:500">' + (state.dcaAmount * 1000).toLocaleString() + '원</span></div>' +
+          '<input type="range" min="10" max="50" step="1" value="' + state.dcaAmount + '" data-action="dca-amount">' +
         '</div>' +
         '<div>' +
           '<div style="display:flex;justify-content:space-between;font-size:13px;color:#8B93A1;margin-bottom:6px"><span>투자 기간</span><span style="color:#F5F6F8;font-weight:500">' + state.dcaYears + '년</span></div>' +
