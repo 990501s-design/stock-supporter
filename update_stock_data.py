@@ -312,8 +312,12 @@ def fetch_market_summary(fallback):
     result["indices"] = indices
 
     try:
-        y10 = yf.Ticker("^TNX").history(period="5d", interval="1d", auto_adjust=True)["Close"].dropna().iloc[-1]
-        result["usRate"] = {"value": round(float(y10), 2), "label": "10년물 국채"}
+        tnx_closes = yf.Ticker("^TNX").history(period="2mo", interval="1d", auto_adjust=True)["Close"].dropna()
+        y10 = float(tnx_closes.iloc[-1])
+        y10_prev = float(tnx_closes.iloc[-2]) if len(tnx_closes) >= 2 else y10
+        change_pct = round((y10 - y10_prev) / y10_prev * 100, 2) if y10_prev else None
+        hist = [round(float(v), 2) for v in tnx_closes.tail(30).tolist()]
+        result["usRate"] = {"value": round(y10, 2), "label": "10년물 국채", "changePct": change_pct, "hist": hist}
     except Exception as e:
         print(f"  ⚠️ 미국 시장금리 조회 실패, 이전 값 유지: {e}")
         if fallback and fallback.get("usRate"):
