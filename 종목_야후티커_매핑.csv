@@ -13,7 +13,7 @@ AAPL,AAPL,Apple,US,빅테크,260,310
 MSFT,MSFT,Microsoft,US,빅테크,440.1,550
 META,META,Meta Platforms,US,빅테크,714,840
 AVGO,AVGO,Broadcom,US,반도체,390,509
-NFLX,NFLX,Netflix,US,빅테크,100,117
+NFLX,NFLX,Netflix,US,빅테크,76,117
 LLY,LLY,Eli Lilly,US,제약,900,1150
 NVO,NVO,Novo Nordisk,US,제약,60,80
 MRK,MRK,Merck,US,제약,110,135
@@ -33,11 +33,11 @@ LITE,LITE,Lumentum,US,반도체,953.4,1150
 COHR,COHR,Coherent,US,반도체,325,468
 AMD,AMD,AMD,US,반도체,380.4,480
 INTC,INTC,Intel,US,반도체,109,130
-TSM,TSM,TSMC,US,반도체,342,440
-ASML,ASML,ASML,US,반도체,1052,1461
+TSM,TSM,TSMC,US,반도체,360,440
+ASML,ASML,ASML,US,반도체,1367.6,2000
 ARM,ARM,Arm Holdings,US,반도체,217,334
 COST,COST,Costco,US,소비재,968,1050
-UNH,UNH,UnitedHealth,US,제약,330,367
+UNH,UNH,UnitedHealth,US,제약,376,430
 CMG,CMG,Chipotle,US,소비재,36,45
 DPZ,DPZ,Domino's Pizza,US,소비재,405,450
 NKE,NIKE,Nike,US,소비재,41,56
@@ -80,7 +80,7 @@ AFRM,AFRM,Affirm,US,금융,60,90
 APPS,APPS,Digital Turbine,US,빅테크,3,5.2
 BAC,BAC,Bank of America,US,금융,57,66
 JPM,JPM,JPMorgan Chase,US,금융,300,333
-GS,GS,Goldman Sachs,US,금융,870,1048
+GS,GS,Goldman Sachs,US,금융,1007,1125
 WMT,WMT,Walmart,US,소비재,123,141
 KO,KO,Coca-Cola,US,소비재,56,70.9
 ADBE,ADBE,Adobe,US,빅테크,226.1,274.6
