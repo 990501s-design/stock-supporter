@@ -31,8 +31,9 @@ HTML_PATH = BASE_DIR / "주식서포터.html"
 RSI_PERIOD = 14
 FEAR_GREED_URL = "https://feargreedmeter.com"
 BACKTEST_YEARS = 20
-HIST_FETCH_PERIOD = "6mo"
+HIST_FETCH_PERIOD = "1y"  # 200일 이동평균 계산을 위해 1년치 수집 (아래 SR_LOOKBACK_DAYS로 기존 6개월 기준 계산은 그대로 유지)
 HIST_POINTS = 60  # 차트에 저장할 최근 거래일 수
+SR_LOOKBACK_DAYS = 126  # 지지선/저항선 계산에 사용할 거래일 수 (기존 6개월 조회 기간과 동일하게 유지)
 
 
 def round_price(val, market):
@@ -498,9 +499,27 @@ def load_existing_fundamentals(html_text):
 NO_FUNDAMENTALS_PREFIXES = ("^", "BTC-", "ETH-")  # 지수/암호화폐는 PER 등의 개념이 없음
 
 
+def _earnings_timing(earnings_ts):
+    """실적발표 시각(UTC epoch)을 미국 동부시간 기준 장전(BMO)/장후(AMC)로 근사 판정.
+    거래소 정규장(09:30~16:00 ET) 이전이면 장전, 이후면 장후, 그 사이는 시간 미정으로 표기."""
+    if not earnings_ts:
+        return None
+    try:
+        import zoneinfo
+        dt_et = datetime.fromtimestamp(earnings_ts, tz=zoneinfo.ZoneInfo("America/New_York"))
+        minutes = dt_et.hour * 60 + dt_et.minute
+        if minutes < 9 * 60 + 30:
+            return "BMO"
+        if minutes >= 16 * 60:
+            return "AMC"
+        return "UNKNOWN"
+    except Exception:
+        return None
+
+
 def fetch_one_fundamentals(yahoo_ticker):
-    """개별 종목의 PER/PEG/포워드PER/EPS/다음 실적발표일/섹터를 야후 파이낸스에서 조회
-    (ETF/지수/암호화폐 등 해당 데이터가 없는 종목은 None 반환)"""
+    """개별 종목의 PER/PEG/포워드PER/EPS/다음 실적발표일/섹터/배당/애널리스트 컨센서스/
+    부채비율/FCF 를 야후 파이낸스에서 조회 (ETF/지수/암호화폐 등 해당 데이터가 없는 종목은 None 반환)"""
     try:
         info = yf.Ticker(yahoo_ticker).get_info()
     except Exception:
@@ -519,6 +538,25 @@ def fetch_one_fundamentals(yahoo_ticker):
             next_earnings = datetime.fromtimestamp(earnings_ts, tz=timezone.utc).date().isoformat()
         except Exception:
             next_earnings = None
+    earnings_timing = _earnings_timing(earnings_ts)
+
+    dividend_yield = info.get("dividendYield")  # 야후에서 이미 % 단위 숫자로 제공 (예: 2.6 = 2.6%)
+    ex_dividend_ts = info.get("exDividendDate")
+    ex_dividend_date = None
+    if ex_dividend_ts:
+        try:
+            ex_dividend_date = datetime.fromtimestamp(ex_dividend_ts, tz=timezone.utc).date().isoformat()
+        except Exception:
+            ex_dividend_date = None
+
+    target_mean = info.get("targetMeanPrice")
+    target_high = info.get("targetHighPrice")
+    target_low = info.get("targetLowPrice")
+    num_analysts = info.get("numberOfAnalystOpinions")
+    recommendation = info.get("recommendationKey")
+    debt_to_equity = info.get("debtToEquity")
+    free_cashflow = info.get("freeCashflow")
+
     if per is None and peg is None and eps is None and sector is None:
         return None
     return {
@@ -528,6 +566,16 @@ def fetch_one_fundamentals(yahoo_ticker):
         "eps": round(eps, 2) if isinstance(eps, (int, float)) else None,
         "sector": sector,
         "nextEarnings": next_earnings,
+        "earningsTiming": earnings_timing,
+        "dividendYield": round(dividend_yield, 2) if isinstance(dividend_yield, (int, float)) else None,
+        "exDividendDate": ex_dividend_date,
+        "targetMeanPrice": round(target_mean, 2) if isinstance(target_mean, (int, float)) else None,
+        "targetHighPrice": round(target_high, 2) if isinstance(target_high, (int, float)) else None,
+        "targetLowPrice": round(target_low, 2) if isinstance(target_low, (int, float)) else None,
+        "numberOfAnalystOpinions": num_analysts if isinstance(num_analysts, int) else None,
+        "recommendationKey": recommendation if recommendation and recommendation != "none" else None,
+        "debtToEquity": round(debt_to_equity, 1) if isinstance(debt_to_equity, (int, float)) else None,
+        "freeCashflow": int(free_cashflow) if isinstance(free_cashflow, (int, float)) else None,
     }
 
 
@@ -683,8 +731,39 @@ def calc_rsi(close_series, period=RSI_PERIOD):
     return float(val.iloc[-1])
 
 
+def calc_ma_cross(closes):
+    """5/20일(초단기), 20/60일(단중기), 50/200일(장기, 전통적 골든/데드크로스) 3단계
+    이동평균과 크로스 상태를 계산.
+    signal: 현재 단기MA가 장기MA 위(golden)/아래(dead)인지
+    crossedRecently: 최근 10거래일 안에 실제 교차(부호 반전)가 발생했는지 여부"""
+    tiers = [("short", 5, 20), ("mid", 20, 60), ("long", 50, 200)]
+    result = {}
+    for key, short_p, long_p in tiers:
+        if len(closes) < long_p + 2:
+            result[key] = None
+            continue
+        ma_short = closes.rolling(short_p).mean()
+        ma_long = closes.rolling(long_p).mean()
+        diff = (ma_short - ma_long).dropna()
+        if len(diff) < 2:
+            result[key] = None
+            continue
+        signal = "golden" if diff.iloc[-1] > 0 else ("dead" if diff.iloc[-1] < 0 else "flat")
+        recent = diff.tail(10)
+        signs = [1 if v > 0 else (-1 if v < 0 else 0) for v in recent]
+        nonzero = [s for s in signs if s != 0]
+        crossed_recently = len(nonzero) >= 2 and nonzero[0] != nonzero[-1]
+        result[key] = {
+            "shortMa": float(ma_short.iloc[-1]),
+            "longMa": float(ma_long.iloc[-1]),
+            "signal": signal,
+            "crossedRecently": crossed_recently,
+        }
+    return result
+
+
 def build_ticker_result(closes, extended_price=None):
-    """closes: 최근 6개월 일봉 종가. extended_price가 주어지면(프리/애프터마켓 실시간가)
+    """closes: 최근 1년치 일봉 종가(200일 이동평균 계산용). extended_price가 주어지면(프리/애프터마켓 실시간가)
     이를 현재가로 쓰고, 아직 정규장 당일 봉이 생성되기 전(프리마켓)인지 여부를 날짜 비교로
     판단해 등락률 기준(전일 종가)을 올바르게 잡는다."""
     is_today = False
@@ -704,10 +783,12 @@ def build_ticker_result(closes, extended_price=None):
         prev_close = float(closes.iloc[-2]) if len(closes) >= 2 else None
     change_pct = ((price - prev_close) / prev_close * 100) if prev_close else None
     rsi = calc_rsi(closes)
-    support, resistance = calc_support_resistance(closes, price)
+    sr_closes = closes.tail(SR_LOOKBACK_DAYS)
+    support, resistance = calc_support_resistance(sr_closes, price)
     hist_closes = closes.tail(HIST_POINTS)
     hist = [float(v) for v in hist_closes]
     channel = calc_channel(hist_closes)
+    ma_cross = calc_ma_cross(closes)
     return {
         "price": price,
         "changePct": change_pct,
@@ -716,6 +797,7 @@ def build_ticker_result(closes, extended_price=None):
         "support": support,
         "resistance": resistance,
         "channel": channel,
+        "maCross": ma_cross,
     }
 
 
@@ -863,6 +945,18 @@ def build_technical_data(mapping_rows, fetched, fallback):
         fetched_val = fetched.get(yahoo_ticker)
         if fetched_val is not None and fetched_val.get("hist"):
             channel = fetched_val["channel"]
+            ma_cross = fetched_val.get("maCross") or {}
+            ma_out = {}
+            for key, tier in ma_cross.items():
+                if tier is None:
+                    ma_out[key] = None
+                else:
+                    ma_out[key] = {
+                        "shortMa": round_price(tier["shortMa"], market),
+                        "longMa": round_price(tier["longMa"], market),
+                        "signal": tier["signal"],
+                        "crossedRecently": tier["crossedRecently"],
+                    }
             tech[original_ticker] = {
                 "hist": [round_price(v, market) for v in fetched_val["hist"]],
                 "support": [round_price(v, market) for v in fetched_val["support"]],
@@ -872,6 +966,7 @@ def build_technical_data(mapping_rows, fetched, fallback):
                     "lower": [round_price(v, market) for v in channel["lower"]],
                     "direction": channel["direction"],
                 },
+                "ma": ma_out,
             }
         elif original_ticker in fallback:
             tech[original_ticker] = fallback[original_ticker]
