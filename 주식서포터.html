@@ -973,11 +973,21 @@ function marketDetailHtml() {
 
 var MAJOR_THEMES = ["반도체", "빅테크", "금융", "소비재", "제약", "헬스케어", "에너지", "산업재", "통신"];
 
+var MAJOR_EARNINGS_TICKERS = [
+  "NVDA", "TSLA", "GOOG", "GOOGL", "AMZN", "AAPL", "MSFT", "META", "AVGO", "NFLX",
+  "LLY", "NVO", "MRK", "Oracle", "DELL", "CRM", "MU", "AMD", "INTC", "TSM", "ASML", "ARM",
+  "COST", "UNH", "NIKE", "SBUX", "HD", "IBM", "V", "PLTR", "SNOW", "DIS", "PYPL",
+  "BAC", "JPM", "GS", "WMT", "KO", "ADBE", "Target", "UBER", "PFE", "SHOP", "MCD",
+  "JNJ", "VZ", "CSCO", "NOW", "COIN", "MSTR", "HOOD", "ANET", "PANW", "ISRG", "ABNB",
+  "삼성전자", "SK하이닉스", "현대차", "네이버", "카카오", "KB금융", "신한지주"
+];
+
 function earningsCalendarHtml() {
   var today = new Date();
   var todayStr = today.toISOString().slice(0, 10);
   var horizonStr = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   var rows = state.stocks.map(function (s) {
+    if (MAJOR_EARNINGS_TICKERS.indexOf(s.ticker) === -1) return null;
     var fd = FUNDAMENTALS_DATA[s.ticker];
     if (!fd || !fd.nextEarnings) return null;
     if (fd.nextEarnings < todayStr || fd.nextEarnings > horizonStr) return null;
@@ -1246,11 +1256,8 @@ function listPageHtml(kind) {
     ? '<div style="text-align:center;color:#5B6270;font-size:13px;padding:40px 0">현재 조건에 해당하는 종목이 없습니다.</div>'
     : "";
 
-  var rowsHtml = sorted.map(function (s, i) {
-    return '<div style="display:flex;align-items:center;gap:8px">' +
-      '<div style="width:20px;font-size:12px;color:#5B6270;flex-shrink:0;text-align:center">' + (i + 1) + '</div>' +
-      '<div style="flex:1">' + stockRowHtml(s, kind) + '</div>' +
-    '</div>';
+  var rowsHtml = sorted.map(function (s) {
+    return stockRowHtml(s, kind);
   }).join('<div style="height:8px"></div>');
 
   var desc = isHunt
