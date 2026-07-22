@@ -481,6 +481,8 @@ var state = {
   uploadFileName: "",
   favorites: loadFavorites(loadPortfolioId()),
   huntHarvestTab: "hunt",
+  perHeatmapTheme: null,
+  earningsExpanded: false,
   portfolioId: loadPortfolioId(),
   portfolio: loadPortfolio(loadPortfolioId()),
   tradeLog: loadTradeLog(loadPortfolioId()),
@@ -974,7 +976,7 @@ function marketDetailHtml() {
 var MAJOR_THEMES = ["반도체", "빅테크", "금융", "소비재", "제약", "헬스케어", "에너지", "산업재", "통신"];
 
 var MAJOR_EARNINGS_TICKERS = [
-  "NVDA", "TSLA", "GOOG", "GOOGL", "AMZN", "AAPL", "MSFT", "META", "AVGO", "NFLX",
+  "NVDA", "TSLA", "GOOGL", "AMZN", "AAPL", "MSFT", "META", "AVGO", "NFLX",
   "LLY", "NVO", "MRK", "Oracle", "DELL", "CRM", "MU", "AMD", "INTC", "TSM", "ASML", "ARM",
   "COST", "UNH", "NIKE", "SBUX", "HD", "IBM", "V", "PLTR", "SNOW", "DIS", "PYPL",
   "BAC", "JPM", "GS", "WMT", "KO", "ADBE", "Target", "UBER", "PFE", "SHOP", "MCD",
@@ -997,7 +999,8 @@ function earningsCalendarHtml() {
   if (rows.length === 0) return "";
 
   var timingLabel = { BMO: "장 시작 전", AMC: "장 마감 후", UNKNOWN: "시간 미정" };
-  var rowsHtml = rows.map(function (r) {
+  var visibleRows = state.earningsExpanded ? rows : rows.slice(0, 7);
+  var rowsHtml = visibleRows.map(function (r) {
     return (
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid #22262E">' +
         '<div>' +
@@ -1011,11 +1014,16 @@ function earningsCalendarHtml() {
       '</div>'
     );
   }).join("");
+  var moreBtnHtml = rows.length > 7 ?
+    '<div data-action="toggle-earnings-more" style="text-align:center;font-size:11.5px;color:#5B6270;padding:8px 0 0;cursor:pointer;border-top:1px solid #22262E;margin-top:2px">' +
+      (state.earningsExpanded ? "접기 ▲" : "더보기 (" + (rows.length - 7) + ") ▼") +
+    '</div>' : "";
 
   return (
     '<div class="card" style="padding:16px;margin-bottom:14px">' +
       '<div style="font-size:13px;font-weight:500;color:#B9C0CC;margin-bottom:4px">이번주 실적발표 예정</div>' +
       rowsHtml +
+      moreBtnHtml +
     '</div>'
   );
 }
@@ -1085,6 +1093,160 @@ function marketBreadthHtml() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* 테마별 포워드 PER 히트맵                                              */
+/* ------------------------------------------------------------------ */
+function perColor(v) {
+  if (v == null) return "#22262E";
+  if (v < 12) return "#1D9E75";
+  if (v < 17) return "#3E9E6E";
+  if (v < 21) return "#5B6270";
+  if (v < 27) return "#C9502F";
+  return "#D6402A";
+}
+
+function perTag(v) {
+  if (v < 17) return { label: "저평가", color: "#5DCAA5", bg: "rgba(29,158,117,0.12)" };
+  if (v < 21) return { label: "보통", color: "#8B93A1", bg: "#1B1F26" };
+  return { label: "고평가", color: "#F0997B", bg: "rgba(226,75,74,0.12)" };
+}
+
+function fmtCapUsd(v) {
+  return (v / 1e12).toFixed(1) + "조 달러";
+}
+
+function themeMarketCapStats() {
+  var rate = (typeof EXCHANGE_RATE !== "undefined") ? EXCHANGE_RATE.usdKrw : 1450;
+  var themeList = MAJOR_THEMES.concat(["국내주식"]);
+  var result = themeList.map(function (theme) {
+    var list = state.stocks.filter(function (s) {
+      if (theme === "국내주식") return s.market === "KR";
+      return s.theme === theme && s.market !== "KR";
+    }).map(function (s) {
+      var fd = FUNDAMENTALS_DATA[s.ticker];
+      if (!fd || fd.marketCap == null || fd.forwardPer == null) return null;
+      var capUsd = s.market === "KR" ? fd.marketCap / rate : fd.marketCap;
+      return { ticker: s.ticker, name: s.name, market: s.market, marketCapUsd: capUsd, forwardPer: fd.forwardPer };
+    }).filter(function (x) { return x !== null; });
+    // 알파벳 A(GOOGL)/C(GOOG)는 같은 회사라 GOOGL 하나로 시가총액을 합산해 표시
+    var googIdx = -1, googlIdx = -1;
+    list.forEach(function (x, i) {
+      if (x.ticker === "GOOG") googIdx = i;
+      if (x.ticker === "GOOGL") googlIdx = i;
+    });
+    if (googIdx !== -1 && googlIdx !== -1) {
+      list[googlIdx].marketCapUsd += list[googIdx].marketCapUsd;
+      list.splice(googIdx, 1);
+    }
+    if (list.length === 0) return null;
+    var totalCap = list.reduce(function (sum, x) { return sum + x.marketCapUsd; }, 0);
+    var weightedPer = list.reduce(function (sum, x) { return sum + x.forwardPer * x.marketCapUsd; }, 0) / totalCap;
+    list.sort(function (a, b) { return b.marketCapUsd - a.marketCapUsd; });
+    return { theme: theme, totalCap: totalCap, avgPer: weightedPer, stocks: list };
+  }).filter(function (x) { return x !== null; });
+  result.sort(function (a, b) { return b.totalCap - a.totalCap; });
+  return result;
+}
+
+function buildHeatmapRows(stocksSortedDesc) {
+  var n = stocksSortedDesc.length;
+  var rowCount = Math.max(1, Math.min(4, Math.round(Math.sqrt(n))));
+  var totalCap = stocksSortedDesc.reduce(function (sum, x) { return sum + x.sizeWeight; }, 0);
+  var target = totalCap / rowCount;
+  var result = [];
+  var current = [];
+  var currentSum = 0;
+  var rowsFilled = 0;
+  stocksSortedDesc.forEach(function (it, idx) {
+    current.push(it);
+    currentSum += it.sizeWeight;
+    var remainingRows = rowCount - rowsFilled - 1;
+    var remainingItems = n - idx - 1;
+    if (currentSum >= target && remainingRows > 0 && remainingItems >= remainingRows) {
+      result.push(current);
+      current = [];
+      currentSum = 0;
+      rowsFilled++;
+    }
+  });
+  if (current.length) result.push(current);
+  return result;
+}
+
+function perHeatmapOverviewHtml() {
+  var stats = themeMarketCapStats();
+  if (stats.length === 0) return "";
+  var cardsHtml = stats.map(function (x) {
+    var tag = perTag(x.avgPer);
+    return (
+      '<div data-action="open-per-heatmap" data-theme="' + esc(x.theme) + '" style="background:#1B1F26;border-radius:14px;padding:14px;cursor:pointer">' +
+        '<div style="font-size:13.5px;font-weight:700;color:#F5F6F8;margin-bottom:6px">' + esc(x.theme) + '</div>' +
+        '<div style="font-size:20px;font-weight:700;color:' + tag.color + ';margin-bottom:4px">' + x.avgPer.toFixed(1) + '</div>' +
+        '<span style="display:inline-block;font-size:10.5px;font-weight:600;border-radius:999px;padding:3px 9px;color:' + tag.color + ';background:' + tag.bg + '">' + tag.label + '</span>' +
+        '<div style="font-size:10.5px;color:#5B6270;margin-top:6px">시가총액 약 ' + fmtCapUsd(x.totalCap) + '</div>' +
+      '</div>'
+    );
+  }).join("");
+  return (
+    '<div class="card" style="padding:16px;margin-bottom:14px">' +
+      '<div style="font-size:13px;font-weight:500;color:#B9C0CC;margin-bottom:2px">테마별 포워드 PER</div>' +
+      '<div style="font-size:11px;color:#5B6270;margin-bottom:12px">포워드 PER = 향후 12개월 예상실적 기준 주가/순이익 비율 · 낮으면 저평가, 높으면 고평가</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' + cardsHtml + '</div>' +
+    '</div>'
+  );
+}
+
+function perHeatmapDetailHtml(themeName) {
+  var stats = themeMarketCapStats();
+  var themeStat = stats.filter(function (x) { return x.theme === themeName; })[0];
+  if (!themeStat) return "";
+  var stocks = themeStat.stocks.slice(0, 12);
+  // 시가총액 1위와 하위권 종목 간 편차가 너무 커서 박스가 한두 개로 몰리는 것을 막기 위해
+  // 제곱근으로 완만하게 보정한 값을 레이아웃(박스 크기)에만 사용 (실제 시가총액 수치와는 무관)
+  stocks.forEach(function (it) { it.sizeWeight = Math.sqrt(it.marketCapUsd); });
+  var rowsArr = buildHeatmapRows(stocks);
+  var maxCap = stocks[0].sizeWeight;
+  var rowsHtml = rowsArr.map(function (row) {
+    var rowWeight = row.reduce(function (sum, x) { return sum + x.sizeWeight; }, 0);
+    var tilesHtml = row.map(function (it) {
+      var sizeRatio = it.sizeWeight / maxCap;
+      var nameFs = sizeRatio > 0.5 ? 15 : sizeRatio > 0.22 ? 13 : 11;
+      var perFs = sizeRatio > 0.5 ? 13 : sizeRatio > 0.22 ? 12 : 10;
+      return (
+        '<div data-action="open-detail" data-ticker="' + esc(it.ticker) + '" style="flex:' + it.sizeWeight + ' 1 0;min-width:0;background:' + perColor(it.forwardPer) + ';border-radius:6px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:4px;cursor:pointer;overflow:hidden">' +
+          '<div style="font-weight:700;color:#fff;font-size:' + nameFs + 'px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + esc(it.ticker) + '</div>' +
+          '<div style="font-weight:800;color:rgba(255,255,255,0.9);font-size:' + perFs + 'px;margin-top:2px">' + it.forwardPer.toFixed(1) + '</div>' +
+        '</div>'
+      );
+    }).join("");
+    return '<div style="display:flex;gap:4px;flex:' + rowWeight + ' 1 0;min-height:0">' + tilesHtml + '</div>';
+  }).join("");
+
+  var tag = perTag(themeStat.avgPer);
+  return (
+    '<div class="card" style="padding:16px;margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+        '<button data-action="close-per-heatmap" style="background:none;border:none;color:#8B93A1;font-size:16px;cursor:pointer;padding:0;line-height:1">&#8592;</button>' +
+        '<div style="font-size:13px;font-weight:500;color:#B9C0CC">' + esc(themeName) + ' 포워드 PER 히트맵</div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#5B6270;margin-bottom:8px">박스 크기 = 시가총액 · 색상 = 포워드 PER (초록 저평가 ~ 빨강 고평가)</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#5B6270;margin-bottom:10px">' +
+        '<span>저평가</span><div style="flex:1;height:5px;border-radius:3px;background:linear-gradient(90deg,#1D9E75,#5B6270,#E24B4A)"></div><span>고평가</span>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:4px;height:300px">' + rowsHtml + '</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:#5B6270">' +
+        '<span>시가총액 상위 ' + stocks.length + '개 종목</span>' +
+        '<span>테마 평균(시총가중) ' + themeStat.avgPer.toFixed(1) + ' · <span style="color:' + tag.color + '">' + tag.label + '</span></span>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function perHeatmapSectionHtml() {
+  if (state.perHeatmapTheme) return perHeatmapDetailHtml(state.perHeatmapTheme);
+  return perHeatmapOverviewHtml();
+}
+
 function beginnerPageHtml() {
   var nh = HISTORICAL_RETURNS.nasdaq;
   var gh = HISTORICAL_RETURNS.gold;
@@ -1102,6 +1264,7 @@ function beginnerPageHtml() {
       earningsCalendarHtml() +
       themeSentimentHtml() +
       marketBreadthHtml() +
+      perHeatmapSectionHtml() +
 
       '<div style="height:1px;background:#22262E;margin:4px 0 20px"></div>' +
 
@@ -3338,6 +3501,15 @@ document.addEventListener("click", function (e) {
     }
   } else if (action === "open-detail") {
     state.selectedTicker = el.getAttribute("data-ticker");
+    render();
+  } else if (action === "open-per-heatmap") {
+    state.perHeatmapTheme = el.getAttribute("data-theme");
+    render();
+  } else if (action === "close-per-heatmap") {
+    state.perHeatmapTheme = null;
+    render();
+  } else if (action === "toggle-earnings-more") {
+    state.earningsExpanded = !state.earningsExpanded;
     render();
   } else if (action === "close-modal") {
     if (e.target === el) { state.selectedTicker = null; render(); }

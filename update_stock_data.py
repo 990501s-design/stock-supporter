@@ -519,7 +519,7 @@ def _earnings_timing(earnings_ts):
 
 def fetch_one_fundamentals(yahoo_ticker):
     """개별 종목의 PER/PEG/포워드PER/EPS/다음 실적발표일/섹터/배당/애널리스트 컨센서스/
-    부채비율/FCF 를 야후 파이낸스에서 조회 (ETF/지수/암호화폐 등 해당 데이터가 없는 종목은 None 반환)"""
+    부채비율/FCF/시가총액 을 야후 파이낸스에서 조회 (ETF/지수/암호화폐 등 해당 데이터가 없는 종목은 None 반환)"""
     try:
         info = yf.Ticker(yahoo_ticker).get_info()
     except Exception:
@@ -556,6 +556,7 @@ def fetch_one_fundamentals(yahoo_ticker):
     recommendation = info.get("recommendationKey")
     debt_to_equity = info.get("debtToEquity")
     free_cashflow = info.get("freeCashflow")
+    market_cap = info.get("marketCap")
 
     if per is None and peg is None and eps is None and sector is None:
         return None
@@ -576,6 +577,7 @@ def fetch_one_fundamentals(yahoo_ticker):
         "recommendationKey": recommendation if recommendation and recommendation != "none" else None,
         "debtToEquity": round(debt_to_equity, 1) if isinstance(debt_to_equity, (int, float)) else None,
         "freeCashflow": int(free_cashflow) if isinstance(free_cashflow, (int, float)) else None,
+        "marketCap": int(market_cap) if isinstance(market_cap, (int, float)) else None,
     }
 
 
