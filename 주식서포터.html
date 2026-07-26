@@ -2029,7 +2029,7 @@ function portfolioGroupHtml(rows, label, isKR) {
 
   var sortedRows = rows.slice().sort(function (a, b) {
     return state.portfolioSortBy === "alpha"
-      ? a.stock.name.localeCompare(b.stock.name)
+      ? a.stock.ticker.localeCompare(b.stock.ticker)
       : b.marketValue - a.marketValue;
   });
 
