@@ -1401,7 +1401,7 @@ function themePageHtml() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 3/4페이지: 사냥감 / 열매수확                                          */
+/* 3/4페이지: 매수신호 / 매도신호                                        */
 /* ------------------------------------------------------------------ */
 function listPageHtml(kind) {
   var isHunt = kind === "hunt";
@@ -1424,7 +1424,7 @@ function listPageHtml(kind) {
   }).join('<div style="height:8px"></div>');
 
   var desc = isHunt
-    ? "RSI 40 미만인 종목만 모았습니다. (40 이상은 관망, 70 이상은 열매수확 권장)"
+    ? "RSI 40 미만인 종목만 모았습니다. (40 이상은 관망, 70 이상은 매도신호 권장)"
     : "RSI 70 이상인 종목만 모았습니다. RSI가 높은 순으로 정렬했습니다.";
   var infoDesc = isHunt
     ? "RSI 40 미만 구간은 참고용 매수 후보 정보입니다."
@@ -1432,15 +1432,15 @@ function listPageHtml(kind) {
 
   var toggleHtml =
     '<div style="display:flex;gap:8px;margin-bottom:16px">' +
-      '<button data-action="set-hunt-harvest" data-kind="hunt" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + (isHunt ? "#1D9E75" : "#22262E") + ';background:' + (isHunt ? "rgba(29,158,117,0.12)" : "#15181D") + ';color:' + (isHunt ? "#5DCAA5" : "#8B93A1") + ';font-size:13px;font-weight:600;cursor:pointer">\u{1F3F9} 사냥감</button>' +
-      '<button data-action="set-hunt-harvest" data-kind="harvest" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + (!isHunt ? "#E24B4A" : "#22262E") + ';background:' + (!isHunt ? "rgba(226,75,74,0.12)" : "#15181D") + ';color:' + (!isHunt ? "#F0997B" : "#8B93A1") + ';font-size:13px;font-weight:600;cursor:pointer">\u{1F33E} 열매수확</button>' +
+      '<button data-action="set-hunt-harvest" data-kind="hunt" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + (isHunt ? "#1D9E75" : "#22262E") + ';background:' + (isHunt ? "rgba(29,158,117,0.12)" : "#15181D") + ';color:' + (isHunt ? "#5DCAA5" : "#8B93A1") + ';font-size:13px;font-weight:600;cursor:pointer">\u{1F7E2} 매수신호</button>' +
+      '<button data-action="set-hunt-harvest" data-kind="harvest" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + (!isHunt ? "#E24B4A" : "#22262E") + ';background:' + (!isHunt ? "rgba(226,75,74,0.12)" : "#15181D") + ';color:' + (!isHunt ? "#F0997B" : "#8B93A1") + ';font-size:13px;font-weight:600;cursor:pointer">\u{1F534} 매도신호</button>' +
     '</div>';
 
   return (
     '<div class="page">' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
-        '<span style="font-size:20px">' + (isHunt ? "\u{1F3F9}" : "\u{1F33E}") + '</span>' +
-        '<div class="page-title" style="margin-bottom:0">' + (isHunt ? "사냥감" : "열매수확") + '</div>' +
+        '<span style="font-size:20px">' + (isHunt ? "\u{1F7E2}" : "\u{1F534}") + '</span>' +
+        '<div class="page-title" style="margin-bottom:0">' + (isHunt ? "매수신호" : "매도신호") + '</div>' +
       '</div>' +
       '<div style="font-size:13px;color:#8B93A1;margin-bottom:16px;line-height:1.6">' + desc + '</div>' +
       toggleHtml +
@@ -3128,7 +3128,7 @@ function uploadModalHtml() {
 var PAGES = [
   { label: "추천방식", emoji: "\u2600\uFE0F" },
   { label: "테마별", emoji: "\u{1F343}" },
-  { label: "사냥/수확", emoji: "\u{1F3AF}" },
+  { label: "매수매도 신호", emoji: "\u{1F3AF}" },
   { label: "즐겨찾기", emoji: "\u2B50" },
   { label: "포트폴리오", emoji: "\u{1F4BC}" }
 ];
