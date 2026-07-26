@@ -1432,14 +1432,14 @@ function listPageHtml(kind) {
 
   var toggleHtml =
     '<div style="display:flex;gap:8px;margin-bottom:16px">' +
-      '<button data-action="set-hunt-harvest" data-kind="hunt" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + (isHunt ? "#1D9E75" : "#22262E") + ';background:' + (isHunt ? "rgba(29,158,117,0.12)" : "#15181D") + ';color:' + (isHunt ? "#5DCAA5" : "#8B93A1") + ';font-size:13px;font-weight:600;cursor:pointer">\u{1F7E2} 매수신호</button>' +
-      '<button data-action="set-hunt-harvest" data-kind="harvest" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + (!isHunt ? "#E24B4A" : "#22262E") + ';background:' + (!isHunt ? "rgba(226,75,74,0.12)" : "#15181D") + ';color:' + (!isHunt ? "#F0997B" : "#8B93A1") + ';font-size:13px;font-weight:600;cursor:pointer">\u{1F534} 매도신호</button>' +
+      '<button data-action="set-hunt-harvest" data-kind="hunt" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + (isHunt ? "#1D9E75" : "#22262E") + ';background:' + (isHunt ? "rgba(29,158,117,0.12)" : "#15181D") + ';color:' + (isHunt ? "#5DCAA5" : "#8B93A1") + ';font-size:13px;font-weight:600;cursor:pointer">\u{1F343} 매수신호</button>' +
+      '<button data-action="set-hunt-harvest" data-kind="harvest" style="flex:1;padding:10px;border-radius:10px;border:1px solid ' + (!isHunt ? "#E24B4A" : "#22262E") + ';background:' + (!isHunt ? "rgba(226,75,74,0.12)" : "#15181D") + ';color:' + (!isHunt ? "#F0997B" : "#8B93A1") + ';font-size:13px;font-weight:600;cursor:pointer">\u{1F341} 매도신호</button>' +
     '</div>';
 
   return (
     '<div class="page">' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">' +
-        '<span style="font-size:20px">' + (isHunt ? "\u{1F7E2}" : "\u{1F534}") + '</span>' +
+        '<span style="font-size:20px">' + (isHunt ? "\u{1F343}" : "\u{1F341}") + '</span>' +
         '<div class="page-title" style="margin-bottom:0">' + (isHunt ? "매수신호" : "매도신호") + '</div>' +
       '</div>' +
       '<div style="font-size:13px;color:#8B93A1;margin-bottom:16px;line-height:1.6">' + desc + '</div>' +
