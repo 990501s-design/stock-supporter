@@ -5,7 +5,7 @@ QQQ,QQQ,Invesco QQQ Trust,US,빅테크,655.6,756
 DIA,DIA,다우존스 ETF,US,빅테크,487.8,517
 SMH,SMH,반도체 ETF,US,반도체,532,650
 NVDA,NVDA,NVIDIA,US,반도체,230,270
-TSLA,TSLA,Tesla,US,빅테크,350,500
+TSLA,TSLA,Tesla,US,빅테크,350,330
 GOOG,GOOG,Alphabet C,US,빅테크,375,450
 GOOGL,GOOGL,Alphabet A,US,빅테크,375,450
 AMZN,AMZN,Amazon,US,빅테크,250,300
@@ -13,13 +13,13 @@ AAPL,AAPL,Apple,US,빅테크,260,310
 MSFT,MSFT,Microsoft,US,빅테크,440.1,550
 META,META,Meta Platforms,US,빅테크,714,840
 AVGO,AVGO,Broadcom,US,반도체,390,509
-NFLX,NFLX,Netflix,US,빅테크,76,117
+NFLX,NFLX,Netflix,US,빅테크,76,100
 LLY,LLY,Eli Lilly,US,제약,900,1150
 NVO,NVO,Novo Nordisk,US,제약,60,80
 MRK,MRK,Merck,US,제약,110,135
 ORCL,Oracle,Oracle,US,빅테크,211,250
 DELL,DELL,Dell Technologies,US,반도체,388,505
-CRWD,CRWD,CrowdStrike,US,빅테크,548,690
+CRWD,CRWD,CrowdStrike,US,빅테크,137,172.5
 CRM,CRM,Salesforce,US,빅테크,200,221
 CRWV,CRWV,CoreWeave,US,빅테크,110,130
 RIVN,RIVN,Rivian,US,소비재,16,25
@@ -63,7 +63,7 @@ ASTS,ASTS,AST SpaceMobile,US,우주,94.9,117
 GSAT,GSAT,Globalstar,US,우주,78,91
 LUNR,LUNR,Intuitive Machines,US,우주,30,40
 SMCI,SMCI,Super Micro Computer,US,반도체,32,48
-SOUN,SOUN,SoundHound AI,US,빅테크,9,16
+SOUN,SOUN,SoundHound AI,US,빅테크,12,16
 SOFI,SOFI,SoFi Technologies,US,금융,12,27.5
 V,V,Visa,US,금융,300,400
 RBLX,RBLX,Roblox,US,빅테크,65,80
@@ -78,8 +78,8 @@ PYPL,PYPL,PayPal,US,금융,59,65
 ENPH,ENPH,Enphase Energy,US,전력,34,38
 AFRM,AFRM,Affirm,US,금융,60,90
 APPS,APPS,Digital Turbine,US,빅테크,3,5.2
-BAC,BAC,Bank of America,US,금융,57,66
-JPM,JPM,JPMorgan Chase,US,금융,300,333
+BAC,BAC,Bank of America,US,금융,63,66
+JPM,JPM,JPMorgan Chase,US,금융,319,340
 GS,GS,Goldman Sachs,US,금융,1007,1125
 WMT,WMT,Walmart,US,소비재,123,141
 KO,KO,Coca-Cola,US,소비재,56,70.9
@@ -104,7 +104,7 @@ TEM,TEM,Tempus AI,US,제약,60,80
 PFE,PFE,Pfizer,US,제약,30,42
 IREN,IREN,IREN,US,반도체,40,50
 NBIS,Nebius,Nebius Group,US,빅테크,180,250.5
-CRDO,CRDO,Credo Technology,US,반도체,270,325
+CRDO,CRDO,Credo Technology,US,반도체,270.4,325
 PANW,PANW,Palo Alto Networks,US,빅테크,220,300
 PGY,PGY,Pagaya Technologies,US,금융,30,40
 SHOP,SHOP,Shopify,US,빅테크,135,180
@@ -115,7 +115,7 @@ FIG,FIG,Figma,US,빅테크,22.5,38
 DAL,DAL,Delta Air Lines,US,소비재,65,80
 PATH,PATH,UiPath,US,로봇,12,20
 SERV,SERV,Serve Robotics,US,로봇,10,16
-JNJ,JNJ,Johnson & Johnson,US,제약,216,250
+JNJ,JNJ,Johnson & Johnson,US,제약,220,250
 VZ,VZ,Verizon,US,빅테크,46,55
 BE,BE,Bloom Energy,US,전력,178,260
 LRCX,LRCX,Lam Research,US,반도체,200,303
@@ -126,11 +126,11 @@ SKHY,SKHYV,SK하이닉스(ADR),US,반도체,,
 035420.KS,네이버,NAVER,KR,빅테크,242000,266000
 RDDT,RDDT,Reddit,US,빅테크,168,220
 EL,EL,Estee Lauder,US,소비재,75,100
-GLW,GLW,Corning,US,반도체,150,200
-CSCO,CSCO,Cisco Systems,US,빅테크,100,117
+GLW,GLW,Corning,US,반도체,100,117
+CSCO,CSCO,Cisco Systems,US,빅테크,70,110
 USAR,USAR,USA Rare Earth,US,전력,21,35
 NOW,NOW,ServiceNow,US,빅테크,87,115
-ZS,ZS,Zscaler,US,빅테크,130,180
+ZS,ZS,Zscaler,US,빅테크,97,130
 HPE,HPE,Hewlett Packard Enterprise,US,빅테크,60,102
 DRAM,DRAM,DRAM 관련(메모리),US,반도체,71,92
 BTC-USD,BTC,비트코인,US,가상자산,,
