@@ -5,11 +5,11 @@ QQQ,QQQ,Invesco QQQ Trust,US,빅테크,655.6,756
 DIA,DIA,다우존스 ETF,US,빅테크,487.8,517
 SMH,SMH,반도체 ETF,US,반도체,532,650
 NVDA,NVDA,NVIDIA,US,반도체,230,270
-TSLA,TSLA,Tesla,US,빅테크,350,330
+TSLA,TSLA,Tesla,US,빅테크,330,450
 GOOG,GOOG,Alphabet C,US,빅테크,375,450
 GOOGL,GOOGL,Alphabet A,US,빅테크,375,450
-AMZN,AMZN,Amazon,US,빅테크,250,300
-AAPL,AAPL,Apple,US,빅테크,260,310
+AMZN,AMZN,Amazon,US,빅테크,270,333
+AAPL,AAPL,Apple,US,빅테크,273,334
 MSFT,MSFT,Microsoft,US,빅테크,440.1,550
 META,META,Meta Platforms,US,빅테크,714,840
 AVGO,AVGO,Broadcom,US,반도체,390,509
@@ -35,7 +35,7 @@ AMD,AMD,AMD,US,반도체,380.4,480
 INTC,INTC,Intel,US,반도체,109,130
 TSM,TSM,TSMC,US,반도체,360,440
 ASML,ASML,ASML,US,반도체,1367.6,2000
-ARM,ARM,Arm Holdings,US,반도체,217,334
+ARM,ARM,Arm Holdings,US,반도체,217,290
 COST,COST,Costco,US,소비재,968,1050
 UNH,UNH,UnitedHealth,US,제약,376,430
 CMG,CMG,Chipotle,US,소비재,36,45
@@ -63,20 +63,20 @@ ASTS,ASTS,AST SpaceMobile,US,우주,94.9,117
 GSAT,GSAT,Globalstar,US,우주,78,91
 LUNR,LUNR,Intuitive Machines,US,우주,30,40
 SMCI,SMCI,Super Micro Computer,US,반도체,32,48
-SOUN,SOUN,SoundHound AI,US,빅테크,12,16
+SOUN,SOUN,SoundHound AI,US,빅테크,9,16
 SOFI,SOFI,SoFi Technologies,US,금융,12,27.5
 V,V,Visa,US,금융,300,400
-RBLX,RBLX,Roblox,US,빅테크,65,80
+RBLX,RBLX,Roblox,US,빅테크,50,65
 PLTR,PLTR,Palantir,US,빅테크,150,200
 U,U,Unity Software,US,빅테크,25,48
 SNOW,SNOW,Snowflake,US,빅테크,230,264
 VUZI,VUZI,Vuzix,US,로봇,1.6,5
 NTLA,NTLA,Intellia Therapeutics,US,제약,15,16
-ABNB,ABNB,Airbnb,US,소비재,118,165
+ABNB,ABNB,Airbnb,US,소비재,128,165
 DIS,DIS,Disney,US,소비재,110,130
 PYPL,PYPL,PayPal,US,금융,59,65
 ENPH,ENPH,Enphase Energy,US,전력,34,38
-AFRM,AFRM,Affirm,US,금융,60,90
+AFRM,AFRM,Affirm,US,금융,34,60
 APPS,APPS,Digital Turbine,US,빅테크,3,5.2
 BAC,BAC,Bank of America,US,금융,63,66
 JPM,JPM,JPMorgan Chase,US,금융,319,340
@@ -118,7 +118,7 @@ SERV,SERV,Serve Robotics,US,로봇,10,16
 JNJ,JNJ,Johnson & Johnson,US,제약,220,250
 VZ,VZ,Verizon,US,빅테크,46,55
 BE,BE,Bloom Energy,US,전력,178,260
-LRCX,LRCX,Lam Research,US,반도체,200,303
+LRCX,LRCX,Lam Research,US,반도체,287,374
 005930.KS,삼성전자,삼성전자,KR,반도체,308550,560000
 000660.KS,SK하이닉스,SK하이닉스,KR,반도체,2400625,3795000
 SKHY,SKHYV,SK하이닉스(ADR),US,반도체,,
@@ -126,11 +126,11 @@ SKHY,SKHYV,SK하이닉스(ADR),US,반도체,,
 035420.KS,네이버,NAVER,KR,빅테크,242000,266000
 RDDT,RDDT,Reddit,US,빅테크,168,220
 EL,EL,Estee Lauder,US,소비재,75,100
-GLW,GLW,Corning,US,반도체,100,117
-CSCO,CSCO,Cisco Systems,US,빅테크,70,110
+GLW,GLW,Corning,US,반도체,150,200
+CSCO,CSCO,Cisco Systems,US,빅테크,100,117
 USAR,USAR,USA Rare Earth,US,전력,21,35
 NOW,NOW,ServiceNow,US,빅테크,87,115
-ZS,ZS,Zscaler,US,빅테크,97,130
+ZS,ZS,Zscaler,US,빅테크,130,180
 HPE,HPE,Hewlett Packard Enterprise,US,빅테크,60,102
 DRAM,DRAM,DRAM 관련(메모리),US,반도체,71,92
 BTC-USD,BTC,비트코인,US,가상자산,,
