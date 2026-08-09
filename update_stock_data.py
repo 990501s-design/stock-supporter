@@ -18,7 +18,8 @@ import json
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date, datetime, timezone
+import statistics
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -518,7 +519,7 @@ def _earnings_timing(earnings_ts):
 
 
 def fetch_one_fundamentals(yahoo_ticker):
-    """개별 종목의 PER/PEG/포워드PER/EPS/다음 실적발표일/섹터/배당(배당수익률/최근 배당락일/직전 배당금/전 배당대비 등락률)/
+    """개별 종목의 PER/PEG/포워드PER/EPS/다음 실적발표일/섹터/배당(배당수익률/다음 배당락일 예상/직전 배당금/전 배당대비 등락률)/
     애널리스트 컨센서스/부채비율/FCF/시가총액 을 야후 파이낸스에서 조회 (ETF/지수/암호화폐 등 해당 데이터가 없는 종목은 None 반환)"""
     try:
         yt = yf.Ticker(yahoo_ticker)
@@ -550,9 +551,12 @@ def fetch_one_fundamentals(yahoo_ticker):
         except Exception:
             ex_dividend_date = None
 
-    # 직전 배당금 및 그 이전 배당 대비 등락률 (배당을 주는 종목만 배당 이력을 추가 조회)
+    # 직전 배당금, 그 이전 배당 대비 등락률, 다음 배당락일 예상
+    # (야후 API는 미래 배당락일을 제공하지 않고 가장 최근 지난 배당락일만 제공하므로,
+    #  과거 배당 이력의 지급 주기(월배당/분기배당 등)를 바탕으로 다음 배당락일을 추정한다)
     last_dividend_value = info.get("lastDividendValue")
     dividend_change_pct = None
+    next_ex_dividend_estimated = None
     if last_dividend_value:
         try:
             divs = yt.dividends
@@ -560,8 +564,21 @@ def fetch_one_fundamentals(yahoo_ticker):
                 prev_dividend_value = float(divs.iloc[-2])
                 if prev_dividend_value:
                     dividend_change_pct = round((last_dividend_value - prev_dividend_value) / prev_dividend_value * 100, 2)
+            recent_dates = divs.index[-6:]  # 최근 최대 6회 지급일로 주기 추정 (표본 적으면 그만큼만 사용)
+            if len(recent_dates) >= 2:
+                intervals = [
+                    (recent_dates[i] - recent_dates[i - 1]).days
+                    for i in range(1, len(recent_dates))
+                ]
+                median_interval = statistics.median(intervals)
+                last_date = recent_dates[-1].date()
+                next_ex_dividend_estimated = (last_date + timedelta(days=round(median_interval))).isoformat()
         except Exception:
-            dividend_change_pct = None
+            pass
+        # 야후가 이미 공식 발표한 미래 배당락일을 제공하는 경우(예: 애플처럼 분기 배당 일정이
+        # 미리 확정된 종목) 추정치보다 그 공식 값이 더 정확하므로 우선 사용
+        if ex_dividend_date and ex_dividend_date >= date.today().isoformat():
+            next_ex_dividend_estimated = ex_dividend_date
 
     target_mean = info.get("targetMeanPrice")
     target_high = info.get("targetHighPrice")
@@ -586,6 +603,7 @@ def fetch_one_fundamentals(yahoo_ticker):
         "exDividendDate": ex_dividend_date,
         "lastDividendValue": round(last_dividend_value, 4) if isinstance(last_dividend_value, (int, float)) else None,
         "dividendChangePct": dividend_change_pct,
+        "nextExDividendDateEstimated": next_ex_dividend_estimated,
         "targetMeanPrice": round(target_mean, 2) if isinstance(target_mean, (int, float)) else None,
         "targetHighPrice": round(target_high, 2) if isinstance(target_high, (int, float)) else None,
         "targetLowPrice": round(target_low, 2) if isinstance(target_low, (int, float)) else None,
