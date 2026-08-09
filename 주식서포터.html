@@ -421,6 +421,35 @@ function saveTradeAnchors(tradeAnchors) {
   cloudSaveTradeAnchors(state.portfolioId, tradeAnchors);
 }
 
+function cloudSaveRebalanceTargets(id, targets) {
+  if (!id) return;
+  firestoreSet("rebalanceTargets", id, targets);
+}
+
+function cloudLoadRebalanceTargets(id) {
+  if (!id) return Promise.resolve(null);
+  return firestoreGet("rebalanceTargets", id);
+}
+
+function rebalanceTargetsStorageKey(id) {
+  return id ? "stockSupporterRebalanceTargets_" + id : "stockSupporterRebalanceTargets";
+}
+
+function loadRebalanceTargets(id) {
+  try {
+    return JSON.parse(localStorage.getItem(rebalanceTargetsStorageKey(id)) || "{}");
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveRebalanceTargets(targets) {
+  try {
+    localStorage.setItem(rebalanceTargetsStorageKey(state.portfolioId), JSON.stringify(targets));
+  } catch (e) { /* localStorage 사용 불가 시 세션 내에서만 유지 */ }
+  cloudSaveRebalanceTargets(state.portfolioId, targets);
+}
+
 function loadPortfolioHistory(id) {
   try {
     return JSON.parse(localStorage.getItem(historyStorageKey(id)) || "[]");
@@ -527,7 +556,14 @@ var state = {
   addToPortfolioTicker: null,
   addToPortfolioError: "",
   portfolioCurrencyView: "KRW",
-  portfolioSortBy: "weight"
+  portfolioSortBy: "weight",
+  showRebalanceModal: false,
+  rebalanceView: "guide",
+  rebalanceTargets: loadRebalanceTargets(loadPortfolioId()),
+  rebalanceSearchQuery: "",
+  rebalanceSuggestionsOpen: false,
+  rebalanceHighlightIndex: -1,
+  rebalanceError: ""
 };
 
 recordPortfolioSnapshot();
@@ -571,6 +607,13 @@ if (state.portfolioId) {
   cloudLoadPasswordHash(state.portfolioId).then(function (hash) {
     state.hasPassword = !!hash;
     render();
+  });
+  cloudLoadRebalanceTargets(state.portfolioId).then(function (cloudRebalanceTargets) {
+    if (cloudRebalanceTargets) {
+      state.rebalanceTargets = cloudRebalanceTargets;
+      try { localStorage.setItem(rebalanceTargetsStorageKey(state.portfolioId), JSON.stringify(cloudRebalanceTargets)); } catch (e) {}
+      render();
+    }
   });
 }
 
@@ -1526,6 +1569,54 @@ function removePortfolioHolding(ticker) {
   render();
 }
 
+function addRebalanceTargetTicker(ticker) {
+  if (!ticker) return;
+  if (!(ticker in state.rebalanceTargets)) {
+    state.rebalanceTargets[ticker] = 0;
+  }
+  state.rebalanceSearchQuery = "";
+  state.rebalanceSuggestionsOpen = false;
+  state.rebalanceHighlightIndex = -1;
+}
+
+function loadCurrentHoldingsIntoRebalance() {
+  var rows = buildPortfolioRows();
+  rows.forEach(function (r) {
+    if (r.isCash) return;
+    if (!(r.h.ticker in state.rebalanceTargets)) {
+      state.rebalanceTargets[r.h.ticker] = 0;
+    }
+  });
+}
+
+function removeRebalanceTarget(ticker) {
+  delete state.rebalanceTargets[ticker];
+}
+
+// 검색창 입력 등으로 목표비중 입력 폼이 재렌더링되기 직전, 아직 저장되지 않은
+// 비중 입력값이 사라지지 않도록 현재 DOM의 입력값을 state에 먼저 반영해둔다.
+function syncRebalanceWeightInputs() {
+  Object.keys(state.rebalanceTargets).forEach(function (ticker) {
+    var input = document.getElementById("rebalance-weight-" + ticker);
+    if (!input) return;
+    var v = parseFloat(input.value);
+    state.rebalanceTargets[ticker] = isNaN(v) || v < 0 ? 0 : v;
+  });
+}
+
+function saveRebalanceWeights() {
+  var newTargets = {};
+  Object.keys(state.rebalanceTargets).forEach(function (ticker) {
+    var input = document.getElementById("rebalance-weight-" + ticker);
+    var v = input ? parseFloat(input.value) : state.rebalanceTargets[ticker];
+    newTargets[ticker] = isNaN(v) || v < 0 ? 0 : v;
+  });
+  state.rebalanceTargets = newTargets;
+  saveRebalanceTargets(newTargets);
+  state.rebalanceView = "guide";
+  render();
+}
+
 function openAddToPortfolio(ticker) {
   state.addToPortfolioTicker = ticker;
   state.addToPortfolioError = "";
@@ -1859,6 +1950,7 @@ function proceedWithPortfolioIdSwitch(id) {
   state.favorites = loadFavorites(id);
   state.tradeLog = loadTradeLog(id);
   state.tradeAnchors = loadTradeAnchors(id);
+  state.rebalanceTargets = loadRebalanceTargets(id);
   state.showPortfolioIdForm = false;
   state.portfolioIdError = "";
   render();
@@ -1904,6 +1996,14 @@ function proceedWithPortfolioIdSwitch(id) {
       try { localStorage.setItem(favoritesStorageKey(id), JSON.stringify(cloudFavorites)); } catch (e) {}
     } else {
       cloudSaveFavorites(id, state.favorites);
+    }
+    return cloudLoadRebalanceTargets(id);
+  }).then(function (cloudRebalanceTargets) {
+    if (cloudRebalanceTargets) {
+      state.rebalanceTargets = cloudRebalanceTargets;
+      try { localStorage.setItem(rebalanceTargetsStorageKey(id), JSON.stringify(cloudRebalanceTargets)); } catch (e) {}
+    } else {
+      cloudSaveRebalanceTargets(id, state.rebalanceTargets);
     }
   }).catch(function (e) { /* 무시: 로컬 데이터로 계속 사용 */ }).then(function () {
     state.portfolioSyncing = false;
@@ -1951,14 +2051,17 @@ function resetCurrentPortfolio() {
     localStorage.removeItem(historyStorageKey(id));
     localStorage.removeItem(favoritesStorageKey(id));
     localStorage.removeItem(tradeLogStorageKey(id));
+    localStorage.removeItem(rebalanceTargetsStorageKey(id));
   } catch (e) {}
   state.portfolio = [];
   state.favorites = {};
   state.tradeLog = [];
+  state.rebalanceTargets = {};
   firestoreDelete("portfolios", id);
   firestoreDelete("history", id);
   firestoreDelete("favorites", id);
   firestoreDelete("tradeLogs", id);
+  firestoreDelete("rebalanceTargets", id);
   render();
 }
 
@@ -2133,6 +2236,163 @@ function rowGroupKey(r) {
   return r.stock.market;
 }
 
+function computeRebalancePlan() {
+  var rate = (typeof EXCHANGE_RATE !== "undefined") ? EXCHANGE_RATE.usdKrw : 1450;
+  var rows = buildPortfolioRows();
+  var totalKRW = rows.reduce(function (sum, r) { return sum + valueInKRW(r, rate); }, 0);
+  var cashCurrentKRW = rows.filter(function (r) { return r.isCash; }).reduce(function (sum, r) { return sum + valueInKRW(r, rate); }, 0);
+  var cashCurrentPct = totalKRW > 0 ? (cashCurrentKRW / totalKRW) * 100 : 0;
+
+  var tickers = Object.keys(state.rebalanceTargets);
+  var stockTargetPctSum = 0;
+  var items = tickers.map(function (ticker) {
+    var targetPct = state.rebalanceTargets[ticker] || 0;
+    stockTargetPctSum += targetPct;
+    var row = rows.filter(function (r) { return r.h.ticker === ticker && !r.isCash; })[0];
+    var stock = row ? row.stock : getStockOrCash(ticker);
+    var currentValueKRW = row ? valueInKRW(row, rate) : 0;
+    var currentPct = totalKRW > 0 ? (currentValueKRW / totalKRW) * 100 : 0;
+    var diffPct = targetPct - currentPct;
+    var diffValueKRW = (diffPct / 100) * totalKRW;
+    var priceKRW = stock ? (stock.market === "KR" ? stock.price : stock.price * rate) : 0;
+    var diffShares = priceKRW > 0 ? Math.round(diffValueKRW / priceKRW) : 0;
+    return {
+      ticker: ticker,
+      name: stock ? stock.name : ticker,
+      stock: stock,
+      currentQty: row ? row.h.qty : 0,
+      currentPct: currentPct,
+      targetPct: targetPct,
+      diffPct: diffPct,
+      diffShares: diffShares
+    };
+  }).sort(function (a, b) { return b.targetPct - a.targetPct; });
+
+  var cashTargetPct = 100 - stockTargetPctSum;
+  var cashDiffPct = cashTargetPct - cashCurrentPct;
+
+  return {
+    items: items,
+    totalKRW: totalKRW,
+    cashCurrentPct: cashCurrentPct,
+    cashTargetPct: cashTargetPct,
+    cashDiffPct: cashDiffPct
+  };
+}
+
+function rebalanceModalHtml() {
+  if (state.rebalanceView === "weights") return rebalanceWeightFormHtml();
+
+  var plan = computeRebalancePlan();
+  var hasTargets = plan.items.length > 0;
+
+  var itemsHtml = plan.items.map(function (it) {
+    var diffColor = it.diffShares > 0 ? "#4C8DFF" : (it.diffShares < 0 ? "#E24B4A" : "#5B6270");
+    var diffLabel = it.diffShares > 0 ? ("매수 " + it.diffShares + "주") : (it.diffShares < 0 ? ("매도 " + Math.abs(it.diffShares) + "주") : "유지");
+    return (
+      '<div style="padding:12px 0;border-bottom:1px solid #22262E">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+          '<div style="font-size:13.5px;font-weight:600;color:#F5F6F8">' + esc(it.name) + '</div>' +
+          '<div style="font-size:12.5px;font-weight:700;color:' + diffColor + '">' + diffLabel + '</div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:#8B93A1">' +
+          '<div>현재 ' + it.currentPct.toFixed(1) + '% \u2192 목표 ' + it.targetPct.toFixed(1) + '%</div>' +
+          '<div>보유 ' + it.currentQty + '주</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join("");
+
+  var cashColor = plan.cashDiffPct > 0 ? "#4C8DFF" : (plan.cashDiffPct < 0 ? "#E24B4A" : "#5B6270");
+  var cashLabel = plan.cashDiffPct > 0 ? ("현금 " + plan.cashDiffPct.toFixed(1) + "% 부족") : (plan.cashDiffPct < 0 ? ("현금 " + Math.abs(plan.cashDiffPct).toFixed(1) + "% 초과") : "적정");
+
+  var bodyHtml = hasTargets
+    ? (
+        itemsHtml +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px">' +
+          '<div style="font-size:13px;color:#8B93A1">현금 비중</div>' +
+          '<div style="font-size:13px;font-weight:700;color:' + cashColor + '">현재 ' + plan.cashCurrentPct.toFixed(1) + '% \u2192 목표 ' + plan.cashTargetPct.toFixed(1) + '% (' + cashLabel + ')</div>' +
+        '</div>'
+      )
+    : '<div style="text-align:center;color:#5B6270;font-size:13px;padding:24px 0">아직 목표 비중이 설정되지 않았습니다. 비중 설정 버튼을 눌러 시작해보세요.</div>';
+
+  return (
+    '<div class="modal-backdrop" data-action="close-rebalance">' +
+      '<div class="modal-sheet" data-action="stop">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+          '<div style="font-size:17px;font-weight:700;color:#F5F6F8">\u2696\uFE0F 리밸런싱 가이드</div>' +
+          '<button class="close-btn" data-action="close-rebalance">&times;</button>' +
+        '</div>' +
+        '<button data-action="open-rebalance-weights" style="width:100%;padding:10px;border-radius:10px;border:1px solid #2A2F38;background:#1B1F26;color:#F5F6F8;font-weight:600;cursor:pointer;font-size:13px;margin-bottom:14px">비중 설정</button>' +
+        bodyHtml +
+      '</div>' +
+    '</div>'
+  );
+}
+
+function rebalanceWeightFormHtml() {
+  var tickers = Object.keys(state.rebalanceTargets);
+  var sum = tickers.reduce(function (s, t) { return s + (state.rebalanceTargets[t] || 0); }, 0);
+
+  var rowsHtml = tickers.map(function (ticker) {
+    var stock = getStockOrCash(ticker);
+    var name = stock ? stock.name : ticker;
+    var value = state.rebalanceTargets[ticker] || 0;
+    return (
+      '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #22262E">' +
+        '<div style="flex:1;min-width:0;font-size:13px;color:#F5F6F8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(name) + '</div>' +
+        '<input type="number" id="rebalance-weight-' + esc(ticker) + '" value="' + value + '" style="width:70px;box-sizing:border-box;text-align:right" step="0.1" min="0">' +
+        '<div style="font-size:12px;color:#5B6270">%</div>' +
+        '<button data-action="remove-rebalance-target" data-ticker="' + esc(ticker) + '" style="background:none;border:none;color:#5B6270;cursor:pointer;font-size:16px;padding:0 2px">&times;</button>' +
+      '</div>'
+    );
+  }).join("");
+
+  var query = state.rebalanceSearchQuery.trim().toLowerCase();
+  var suggestions = query
+    ? state.stocks.filter(function (s) { return matchesSearch(s, query) && !(s.ticker in state.rebalanceTargets); }).slice(0, 8)
+    : [];
+  var suggestionsHtml = "";
+  if (state.rebalanceSuggestionsOpen && suggestions.length > 0) {
+    suggestionsHtml =
+      '<div style="position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1B1F26;border:1px solid #2A2F38;border-radius:10px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,0.4)">' +
+        suggestions.map(function (s, idx) {
+          var isActive = idx === state.rebalanceHighlightIndex;
+          return (
+            '<div data-action="select-rebalance-ticker" data-ticker="' + esc(s.ticker) + '" style="padding:10px 12px;cursor:pointer;font-size:13px;color:#F5F6F8;border-bottom:1px solid #22262E;background:' + (isActive ? "#2A2F38" : "transparent") + '">' +
+              esc(s.name) + ' <span style="color:#5B6270;font-size:11px">' + esc(s.ticker) + '</span>' +
+            '</div>'
+          );
+        }).join("") +
+      '</div>';
+  }
+
+  return (
+    '<div class="modal-backdrop" data-action="close-rebalance">' +
+      '<div class="modal-sheet" data-action="stop">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+          '<div style="font-size:17px;font-weight:700;color:#F5F6F8">목표 비중 설정</div>' +
+          '<button class="close-btn" data-action="close-rebalance">&times;</button>' +
+        '</div>' +
+        '<button data-action="load-current-holdings-rebalance" style="width:100%;padding:10px;border-radius:10px;border:1px solid #2A2F38;background:#1B1F26;color:#F5F6F8;font-weight:600;cursor:pointer;font-size:13px;margin-bottom:10px">현재 보유 종목 불러오기</button>' +
+        '<div style="position:relative;margin-bottom:14px">' +
+          '<input type="text" id="rebalance-ticker-input" placeholder="종목명 또는 티커 검색 후 추가" autocomplete="off" value="' + esc(state.rebalanceSearchQuery) + '" style="width:100%;box-sizing:border-box">' +
+          suggestionsHtml +
+        '</div>' +
+        (tickers.length > 0 ? rowsHtml : '<div style="text-align:center;color:#5B6270;font-size:13px;padding:16px 0">종목을 불러오거나 검색해서 추가해주세요.</div>') +
+        '<div style="display:flex;justify-content:space-between;padding:12px 0 16px;font-size:12px;color:#8B93A1">' +
+          '<div>합계</div>' +
+          '<div style="color:' + (sum > 100 ? "#E24B4A" : "#F5F6F8") + ';font-weight:600">' + sum.toFixed(1) + '%</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button data-action="back-rebalance-guide" style="flex:1;padding:10px;border-radius:10px;border:1px solid #2A2F38;background:none;color:#8B93A1;font-weight:600;cursor:pointer;font-size:13px">취소</button>' +
+          '<button data-action="save-rebalance-weights" style="flex:1;padding:10px;border-radius:10px;border:none;background:#4C8DFF;color:#fff;font-weight:600;cursor:pointer;font-size:13px">저장</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>'
+  );
+}
+
 function portfolioHistoryHtml() {
   var history = loadPortfolioHistory(state.portfolioId).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
   if (history.length === 0) {
@@ -2277,6 +2537,7 @@ function portfolioPageHtml() {
             '<div style="font-size:12px;color:#8B93A1">포트폴리오 ID <span style="color:#F5F6F8;font-weight:600">' + esc(state.portfolioId) + '</span>' + (state.portfolioSyncing ? ' <span style="color:#5B6270">· 동기화 중...</span>' : ' <span style="color:#4C8DFF">· 클라우드 연결됨</span>') + '</div>' +
             '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
               '<button data-action="toggle-portfolio-history" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">' + (state.showPortfolioHistory ? "추이 닫기" : "자산 추이") + '</button>' +
+              '<button data-action="open-rebalance" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">\u2696\uFE0F 리밸런싱</button>' +
               '<button data-action="toggle-portfolio-id-form" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">ID 변경</button>' +
               '<button data-action="open-password-form" style="background:none;border:1px solid #2A2F38;border-radius:6px;color:#8B93A1;font-size:11px;cursor:pointer;padding:4px 8px">' + (state.hasPassword ? "비밀번호 변경/삭제" : "비밀번호 설정") + '</button>' +
               '<button data-action="reset-portfolio" style="background:none;border:1px solid #E24B4A;border-radius:6px;color:#E24B4A;font-size:11px;cursor:pointer;padding:4px 8px">초기화</button>' +
@@ -3166,6 +3427,8 @@ function render() {
     modalHtml = tradeJournalModalHtml();
   } else if (state.showMarketDetail) {
     modalHtml = marketDetailHtml();
+  } else if (state.showRebalanceModal) {
+    modalHtml = rebalanceModalHtml();
   }
   var uploadHtml = state.showUpload ? uploadModalHtml() : "";
   var gaugeSectionHtml = state.page === 0 ? '<div style="padding:10px 16px 0">' + gaugeHtml(fgScore) + '</div>' : "";
@@ -3326,6 +3589,62 @@ function render() {
         } else if (e.key === "Escape") {
           state.tradeFormSuggestionsOpen = false;
           state.tradeFormHighlightIndex = -1;
+          render();
+        }
+      });
+    }
+  }
+
+  // 리밸런싱 종목추가 검색창 포커스 유지 + 자체 드롭다운 처리
+  if (state.showRebalanceModal && state.rebalanceView === "weights") {
+    var rebalanceInput = document.getElementById("rebalance-ticker-input");
+    if (rebalanceInput) {
+      var rComposing = false;
+      function commitRebalanceSearch(e) {
+        state.rebalanceSearchQuery = e.target.value;
+        state.rebalanceSuggestionsOpen = true;
+        state.rebalanceHighlightIndex = -1;
+        var focusPos = e.target.selectionStart;
+        syncRebalanceWeightInputs();
+        render();
+        var newInput = document.getElementById("rebalance-ticker-input");
+        if (newInput) { newInput.focus(); newInput.setSelectionRange(focusPos, focusPos); }
+      }
+      rebalanceInput.addEventListener("compositionstart", function () { rComposing = true; });
+      rebalanceInput.addEventListener("compositionend", function () { rComposing = false; });
+      rebalanceInput.addEventListener("input", function (e) {
+        state.rebalanceSearchQuery = e.target.value;
+        if (rComposing) return;
+        commitRebalanceSearch(e);
+      });
+      rebalanceInput.addEventListener("keydown", function (e) {
+        var query = state.rebalanceSearchQuery.trim().toLowerCase();
+        var suggestions = query
+          ? state.stocks.filter(function (s) { return matchesSearch(s, query) && !(s.ticker in state.rebalanceTargets); }).slice(0, 8)
+          : [];
+        if (!state.rebalanceSuggestionsOpen || suggestions.length === 0) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          state.rebalanceHighlightIndex = (state.rebalanceHighlightIndex + 1) % suggestions.length;
+          syncRebalanceWeightInputs();
+          render();
+          var i1 = document.getElementById("rebalance-ticker-input");
+          if (i1) { i1.focus(); var v = i1.value; i1.setSelectionRange(v.length, v.length); }
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          state.rebalanceHighlightIndex = (state.rebalanceHighlightIndex - 1 + suggestions.length) % suggestions.length;
+          syncRebalanceWeightInputs();
+          render();
+          var i2 = document.getElementById("rebalance-ticker-input");
+          if (i2) { i2.focus(); var v2 = i2.value; i2.setSelectionRange(v2.length, v2.length); }
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          var pick = suggestions[state.rebalanceHighlightIndex >= 0 ? state.rebalanceHighlightIndex : 0];
+          if (pick) { syncRebalanceWeightInputs(); addRebalanceTargetTicker(pick.ticker); render(); }
+        } else if (e.key === "Escape") {
+          state.rebalanceSuggestionsOpen = false;
+          state.rebalanceHighlightIndex = -1;
+          syncRebalanceWeightInputs();
           render();
         }
       });
@@ -3628,6 +3947,32 @@ document.addEventListener("click", function (e) {
     render();
   } else if (action === "close-market-detail") {
     if (e.target === el) { state.showMarketDetail = false; render(); }
+  } else if (action === "open-rebalance") {
+    state.showRebalanceModal = true;
+    state.rebalanceView = "guide";
+    render();
+  } else if (action === "close-rebalance") {
+    if (e.target === el) { state.showRebalanceModal = false; render(); }
+  } else if (action === "open-rebalance-weights") {
+    state.rebalanceView = "weights";
+    render();
+  } else if (action === "back-rebalance-guide") {
+    state.rebalanceView = "guide";
+    render();
+  } else if (action === "load-current-holdings-rebalance") {
+    syncRebalanceWeightInputs();
+    loadCurrentHoldingsIntoRebalance();
+    render();
+  } else if (action === "select-rebalance-ticker") {
+    syncRebalanceWeightInputs();
+    addRebalanceTargetTicker(el.getAttribute("data-ticker"));
+    render();
+  } else if (action === "remove-rebalance-target") {
+    syncRebalanceWeightInputs();
+    removeRebalanceTarget(el.getAttribute("data-ticker"));
+    render();
+  } else if (action === "save-rebalance-weights") {
+    saveRebalanceWeights();
   } else if (action === "stop") {
     e.stopPropagation();
   }
