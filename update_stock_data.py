@@ -189,12 +189,13 @@ FIB_LOOKBACK_DAYS = 252  # 의미있는 스윙을 찾을 구간 (최근 약 12�
 
 
 def calc_fibonacci_confluence(closes, current_price, window=15, tol_pct=0.015, max_levels=4, range_pct=0.2):
-    """최근 6~12개월 내 '의미있는'(노이즈성 잔파동이 아닌) 고점-저점 스윙들 사이에
-    피보나치 되돌림(23.6~100%)/확장(127.2%, 161.8%) 레벨을 그은 뒤,
-    여러 스윙에서 같은 비율대가 겹치거나 대표적인 비율(50%, 61.8%, 100% 등)에 해당하는
-    가격대만 추려 타점 후보로 제시
+    """최근 6~12개월 내 '의미있는'(노이즈성 잔파동이 아닌) 고점-저점 스윙들을 지그재그로 이어,
+    인접한 스윙 각각에 피보나치 되돌림(23.6~100%)/확장(127.2%, 161.8%) 레벨을 그은 뒤,
+    서로 다른 스윙들에서 공통으로 겹치는 가격대만 추려 타점 후보로 제시
     - window를 크게(15일) 잡아 좌우 한 달가량보다 높거나/낮은 지점만 '의미있는' 스윙으로 인정
       (거래일 기준 6개월치의 지지/저항 계산(window=3)보다 훨씬 굵직한 스윙만 남기기 위함)
+    - 모든 고점-저점 조합이 아니라 '인접한(연속된) 스윙'만 사용: 서로 무관한 스윙들의 비율이
+      우연히 한 가격대에 뒤섞여 겹치는 것처럼 보이는 것을 방지하기 위함
     """
     vals = closes.tail(FIB_LOOKBACK_DAYS).tolist()
     n = len(vals)
@@ -208,16 +209,29 @@ def calc_fibonacci_confluence(closes, current_price, window=15, tol_pct=0.015, m
         elif vals[i] == min(seg):
             pivots.append((i, vals[i], "L"))
 
+    # 지그재그: 연속으로 같은 타입(H/H, L/L)이 나오면 더 극단적인 값만 남겨 고점/저점이 번갈아 나오게 정리
+    zigzag = []
+    for p in pivots:
+        if zigzag and zigzag[-1][2] == p[2]:
+            more_extreme = p[1] > zigzag[-1][1] if p[2] == "H" else p[1] < zigzag[-1][1]
+            if more_extreme:
+                zigzag[-1] = p
+        else:
+            zigzag.append(p)
+
+    # 변동폭이 큰(=진짜 의미있는) 스윙 상위 max_swings개만 사용해 사소한 스윙이 섞이는 것을 방지
+    max_swings = 6
+    swings = list(zip(zigzag, zigzag[1:]))
+    swings.sort(key=lambda pair: abs(pair[1][1] - pair[0][1]), reverse=True)
+    swings = swings[:max_swings]
+
     levels = []  # (price, ratio)
-    for a_idx, a_val, a_type in pivots:
-        for b_idx, b_val, b_type in pivots:
-            if b_idx <= a_idx or a_type == b_type:
-                continue
-            diff = b_val - a_val
-            if diff == 0:
-                continue
-            for ratio in FIB_RATIOS:
-                levels.append((a_val + diff * ratio, ratio))
+    for (a_idx, a_val, a_type), (b_idx, b_val, b_type) in swings:
+        diff = b_val - a_val
+        if diff == 0:
+            continue
+        for ratio in FIB_RATIOS:
+            levels.append((a_val + diff * ratio, ratio))
 
     if not levels:
         return []
