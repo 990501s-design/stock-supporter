@@ -184,6 +184,55 @@ def calc_channel(closes):
     return {"upper": upper, "lower": lower, "direction": direction}
 
 
+FIB_RATIOS = [0.236, 0.382, 0.5, 0.618, 0.786, 1.272, 1.618]  # 되돌림(0~1) + 확장(1 이상) 비율
+
+
+def calc_fibonacci_confluence(closes, current_price, window=5, tol_pct=0.015, max_levels=4, range_pct=0.25):
+    """모든 저점-고점 스윙 조합에 대해 피보나치 되돌림/확장 레벨을 그어본 뒤,
+    여러 스윙에서 공통으로 겹치는(컨플루언스) 가격대를 찾아 가장 유의미한 레벨만 추출
+    - 특정 한 쌍의 저점/고점만 쓰면 어디를 잇느냐에 따라 결과가 크게 달라지므로,
+      가능한 모든 저점-고점 조합의 레벨을 다 계산한 뒤 겹치는 횟수(count)로 신뢰도를 판단
+    """
+    vals = closes.tolist()
+    n = len(vals)
+    pivots = []  # (index, value, type)
+    for i in range(window, n - window):
+        seg = vals[i - window:i + window + 1]
+        if vals[i] == max(seg):
+            pivots.append((i, vals[i], "H"))
+        elif vals[i] == min(seg):
+            pivots.append((i, vals[i], "L"))
+
+    levels = []
+    for a_idx, a_val, a_type in pivots:
+        for b_idx, b_val, b_type in pivots:
+            if b_idx <= a_idx or a_type == b_type:
+                continue
+            diff = b_val - a_val
+            if diff == 0:
+                continue
+            for ratio in FIB_RATIOS:
+                levels.append(a_val + diff * ratio)
+
+    if not levels:
+        return []
+
+    levels.sort()
+    clusters = [[levels[0]]]
+    for v in levels[1:]:
+        center = sum(clusters[-1]) / len(clusters[-1])
+        if abs(v - center) / center <= tol_pct:
+            clusters[-1].append(v)
+        else:
+            clusters.append([v])
+
+    result = [(sum(c) / len(c), len(c)) for c in clusters]
+    lo, hi = current_price * (1 - range_pct), current_price * (1 + range_pct)
+    result = [r for r in result if lo <= r[0] <= hi]
+    result.sort(key=lambda r: (-r[1], abs(r[0] - current_price)))
+    return [{"price": p, "count": c} for p, c in result[:max_levels]]
+
+
 def load_existing_historical_returns(html_text):
     """기존 HTML에서 HISTORICAL_RETURNS 를 파싱해 fallback 값으로 사용"""
     m = re.search(r"var HISTORICAL_RETURNS = (\{.*?\});", html_text)
@@ -825,6 +874,7 @@ def build_ticker_result(closes, extended_price=None):
     hist = [float(v) for v in hist_closes]
     channel = calc_channel(hist_closes)
     ma_cross = calc_ma_cross(closes)
+    fib = calc_fibonacci_confluence(sr_closes, price)
     return {
         "price": price,
         "changePct": change_pct,
@@ -834,6 +884,7 @@ def build_ticker_result(closes, extended_price=None):
         "resistance": resistance,
         "channel": channel,
         "maCross": ma_cross,
+        "fib": fib,
     }
 
 
@@ -1003,6 +1054,7 @@ def build_technical_data(mapping_rows, fetched, fallback):
                     "direction": channel["direction"],
                 },
                 "ma": ma_out,
+                "fib": [{"price": round_price(v["price"], market), "count": v["count"]} for v in fetched_val.get("fib") or []],
             }
         elif original_ticker in fallback:
             tech[original_ticker] = fallback[original_ticker]
