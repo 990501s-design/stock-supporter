@@ -184,17 +184,22 @@ def calc_channel(closes):
     return {"upper": upper, "lower": lower, "direction": direction}
 
 
-FIB_RATIOS = [0.236, 0.382, 0.5, 0.618, 0.786, 1.272, 1.618]  # 되돌림(0~1) + 확장(1 이상) 비율
+FIB_RATIOS = [0.236, 0.382, 0.5, 0.618, 0.786, 1.0, 1.272, 1.618]  # 되돌림(0~100%) + 확장(127.2%, 161.8%) 비율
+FIB_LOOKBACK_DAYS = 252  # 의미있는 스윙을 찾을 구간 (최근 약 12개월)
 
 
-def calc_fibonacci_confluence(closes, current_price, window=5, tol_pct=0.015, max_levels=4, range_pct=0.25):
-    """모든 저점-고점 스윙 조합에 대해 피보나치 되돌림/확장 레벨을 그어본 뒤,
-    여러 스윙에서 공통으로 겹치는(컨플루언스) 가격대를 찾아 가장 유의미한 레벨만 추출
-    - 특정 한 쌍의 저점/고점만 쓰면 어디를 잇느냐에 따라 결과가 크게 달라지므로,
-      가능한 모든 저점-고점 조합의 레벨을 다 계산한 뒤 겹치는 횟수(count)로 신뢰도를 판단
+def calc_fibonacci_confluence(closes, current_price, window=15, tol_pct=0.015, max_levels=4, range_pct=0.2):
+    """최근 6~12개월 내 '의미있는'(노이즈성 잔파동이 아닌) 고점-저점 스윙들 사이에
+    피보나치 되돌림(23.6~100%)/확장(127.2%, 161.8%) 레벨을 그은 뒤,
+    여러 스윙에서 같은 비율대가 겹치거나 대표적인 비율(50%, 61.8%, 100% 등)에 해당하는
+    가격대만 추려 타점 후보로 제시
+    - window를 크게(15일) 잡아 좌우 한 달가량보다 높거나/낮은 지점만 '의미있는' 스윙으로 인정
+      (거래일 기준 6개월치의 지지/저항 계산(window=3)보다 훨씬 굵직한 스윙만 남기기 위함)
     """
-    vals = closes.tolist()
+    vals = closes.tail(FIB_LOOKBACK_DAYS).tolist()
     n = len(vals)
+    if n < 2 * window + 3:
+        window = max(3, n // 8)
     pivots = []  # (index, value, type)
     for i in range(window, n - window):
         seg = vals[i - window:i + window + 1]
@@ -203,7 +208,7 @@ def calc_fibonacci_confluence(closes, current_price, window=5, tol_pct=0.015, ma
         elif vals[i] == min(seg):
             pivots.append((i, vals[i], "L"))
 
-    levels = []
+    levels = []  # (price, ratio)
     for a_idx, a_val, a_type in pivots:
         for b_idx, b_val, b_type in pivots:
             if b_idx <= a_idx or a_type == b_type:
@@ -212,25 +217,30 @@ def calc_fibonacci_confluence(closes, current_price, window=5, tol_pct=0.015, ma
             if diff == 0:
                 continue
             for ratio in FIB_RATIOS:
-                levels.append(a_val + diff * ratio)
+                levels.append((a_val + diff * ratio, ratio))
 
     if not levels:
         return []
 
-    levels.sort()
+    levels.sort(key=lambda t: t[0])
     clusters = [[levels[0]]]
-    for v in levels[1:]:
-        center = sum(clusters[-1]) / len(clusters[-1])
-        if abs(v - center) / center <= tol_pct:
-            clusters[-1].append(v)
+    for item in levels[1:]:
+        center = sum(x[0] for x in clusters[-1]) / len(clusters[-1])
+        if abs(item[0] - center) / center <= tol_pct:
+            clusters[-1].append(item)
         else:
-            clusters.append([v])
+            clusters.append([item])
 
-    result = [(sum(c) / len(c), len(c)) for c in clusters]
+    result = []
+    for c in clusters:
+        price = sum(x[0] for x in c) / len(c)
+        ratios = sorted(set(round(x[1], 3) for x in c))
+        result.append({"price": price, "ratios": ratios, "count": len(c)})
+
     lo, hi = current_price * (1 - range_pct), current_price * (1 + range_pct)
-    result = [r for r in result if lo <= r[0] <= hi]
-    result.sort(key=lambda r: (-r[1], abs(r[0] - current_price)))
-    return [{"price": p, "count": c} for p, c in result[:max_levels]]
+    result = [r for r in result if lo <= r["price"] <= hi]
+    result.sort(key=lambda r: (-len(r["ratios"]), -r["count"], abs(r["price"] - current_price)))
+    return result[:max_levels]
 
 
 def load_existing_historical_returns(html_text):
@@ -874,7 +884,7 @@ def build_ticker_result(closes, extended_price=None):
     hist = [float(v) for v in hist_closes]
     channel = calc_channel(hist_closes)
     ma_cross = calc_ma_cross(closes)
-    fib = calc_fibonacci_confluence(sr_closes, price)
+    fib = calc_fibonacci_confluence(closes, price)
     return {
         "price": price,
         "changePct": change_pct,
@@ -1054,7 +1064,7 @@ def build_technical_data(mapping_rows, fetched, fallback):
                     "direction": channel["direction"],
                 },
                 "ma": ma_out,
-                "fib": [{"price": round_price(v["price"], market), "count": v["count"]} for v in fetched_val.get("fib") or []],
+                "fib": [{"price": round_price(v["price"], market), "ratios": v["ratios"], "count": v["count"]} for v in fetched_val.get("fib") or []],
             }
         elif original_ticker in fallback:
             tech[original_ticker] = fallback[original_ticker]
