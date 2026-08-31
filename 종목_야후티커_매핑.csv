@@ -4,7 +4,7 @@ SPCX,SPCX,Space Exploration Technologies,US,우주,150,200
 QQQ,QQQ,Invesco QQQ Trust,US,빅테크,697.3,756
 DIA,DIA,다우존스 ETF,US,빅테크,511.2,517
 SMH,SMH,반도체 ETF,US,반도체,570,650
-NVDA,NVDA,NVIDIA,US,반도체,230,270
+NVDA,NVDA,NVIDIA,US,반도체,255,300
 TSLA,TSLA,Tesla,US,빅테크,330,450
 GOOG,GOOG,Alphabet C,US,빅테크,375,450
 GOOGL,GOOGL,Alphabet A,US,빅테크,375,450
@@ -19,12 +19,12 @@ NVO,NVO,Novo Nordisk,US,제약,60,80
 MRK,MRK,Merck,US,제약,110,135
 ORCL,Oracle,Oracle,US,빅테크,211,250
 DELL,DELL,Dell Technologies,US,반도체,388,505
-CRWD,CRWD,CrowdStrike,US,빅테크,137,172.5
-CRM,CRM,Salesforce,US,빅테크,200,221
+CRWD,CRWD,CrowdStrike,US,빅테크,172,230
+CRM,CRM,Salesforce,US,빅테크,200,260
 CRWV,CRWV,CoreWeave,US,빅테크,110,136
 RIVN,RIVN,Rivian,US,소비재,16,25
 ZM,ZM,Zoom,US,빅테크,85,100
-MU,MU,Micron Technology,US,반도체,1222,1650
+MU,MU,Micron Technology,US,반도체,1081,1485
 SNDK,SNDK,SanDisk,US,반도체,1800,2200
 WDC,WDC,Western Digital,US,반도체,532,700
 STX,STX,Seagate Technology,US,반도체,990,1224
@@ -81,10 +81,10 @@ APPS,APPS,Digital Turbine,US,빅테크,3,5.2
 BAC,BAC,Bank of America,US,금융,63,66
 JPM,JPM,JPMorgan Chase,US,금융,319,340
 GS,GS,Goldman Sachs,US,금융,1007,1125
-WMT,WMT,Walmart,US,소비재,123,141
+WMT,WMT,Walmart,US,소비재,100,123
 KO,KO,Coca-Cola,US,소비재,56,70.9
 ADBE,ADBE,Adobe,US,빅테크,226.1,274.6
-TGT,Target,Target,US,소비재,116,138
+TGT,Target,Target,US,소비재,150,176
 CHPT,CHPT,ChargePoint,US,전력,8,9
 NIO,NIO,NIO,US,소비재,5.1,7.6
 LCID,LCID,Lucid Group,US,소비재,6,13
@@ -96,7 +96,7 @@ ABCL,ABCL,AbCellera Biologics,US,제약,3.2,14.2
 GPRO,GPRO,GoPro,US,소비재,1.4,2.3
 CRSP,CRSP,CRISPR Therapeutics,US,제약,52,74
 UBER,UBER,Uber,US,빅테크,82,100
-BBY,BBY,Best Buy,US,소비재,70,90
+BBY,BBY,Best Buy,US,소비재,80,95
 CAR,CAR,Avis Budget,US,소비재,140,150
 CRCL,Circle,Circle Internet,US,금융,90,120
 JOBY,JOBY,Joby Aviation,US,로봇,14,18
@@ -250,7 +250,7 @@ ADI,ADI,Analog Devices,US,반도체,,
 AON,AON,Aon plc,US,보험,,
 APA,APA,APA Corporation,US,에너지,,
 APO,APO,Apollo Global Management,US,금융,,
-AMAT,AMAT,Applied Materials,US,반도체,,
+AMAT,AMAT,Applied Materials,US,반도체,476,692
 APTV,APTV,Aptiv,US,소비재,,
 ACGL,ACGL,Arch Capital Group,US,보험,,
 ADM,ADM,Archer Daniels Midland,US,소비재,113.11,137.99
