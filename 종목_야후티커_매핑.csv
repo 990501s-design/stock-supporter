@@ -18,7 +18,7 @@ LLY,LLY,Eli Lilly,US,제약,900,1150
 NVO,NVO,Novo Nordisk,US,제약,60,80
 MRK,MRK,Merck,US,제약,110,135
 ORCL,Oracle,Oracle,US,빅테크,211,250
-DELL,DELL,Dell Technologies,US,반도체,388,505
+DELL,DELL,Dell Technologies,US,반도체,420,560
 CRWD,CRWD,CrowdStrike,US,빅테크,172,230
 CRM,CRM,Salesforce,US,빅테크,200,260
 CRWV,CRWV,CoreWeave,US,빅테크,110,136
@@ -41,7 +41,7 @@ UNH,UNH,UnitedHealth,US,제약,376,430
 CMG,CMG,Chipotle,US,소비재,36,45
 DPZ,DPZ,Domino's Pizza,US,소비재,405,450
 NKE,NIKE,Nike,US,소비재,41,56
-LULU,LULU,Lululemon,US,소비재,126,160
+LULU,LULU,Lululemon,US,소비재,106,126
 CROX,Crocs,Crocs,US,소비재,100,154
 SBUX,SBUX,Starbucks,US,소비재,83,105
 BOTZ,BOTZ,로보틱스 ETF,US,로봇,32,38
@@ -69,7 +69,7 @@ V,V,Visa,US,금융,300,400
 RBLX,RBLX,Roblox,US,빅테크,50,65
 PLTR,PLTR,Palantir,US,빅테크,150,200
 U,U,Unity Software,US,빅테크,25,48
-SNOW,SNOW,Snowflake,US,빅테크,230,264
+SNOW,SNOW,Snowflake,US,빅테크,300,431
 VUZI,VUZI,Vuzix,US,로봇,1.6,5
 NTLA,NTLA,Intellia Therapeutics,US,제약,15,16
 ABNB,ABNB,Airbnb,US,소비재,118,165
@@ -104,8 +104,8 @@ TEM,TEM,Tempus AI,US,제약,60,80
 PFE,PFE,Pfizer,US,제약,30,42
 IREN,IREN,IREN,US,반도체,40,50
 NBIS,Nebius,Nebius Group,US,빅테크,227,267.2
-CRDO,CRDO,Credo Technology,US,반도체,270.4,325
-PANW,PANW,Palo Alto Networks,US,빅테크,220,300
+CRDO,CRDO,Credo Technology,US,반도체,228.8,275
+PANW,PANW,Palo Alto Networks,US,빅테크,300,386
 PGY,PGY,Pagaya Technologies,US,금융,30,40
 SHOP,SHOP,Shopify,US,빅테크,135,180
 APP,APP,AppLovin,US,빅테크,427,520
