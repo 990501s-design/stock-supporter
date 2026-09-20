@@ -11,7 +11,7 @@ GOOGL,GOOGL,Alphabet A,US,빅테크,375,450
 AMZN,AMZN,Amazon,US,빅테크,270,333
 AAPL,AAPL,Apple,US,빅테크,273,334
 MSFT,MSFT,Microsoft,US,빅테크,440.1,550
-META,META,Meta Platforms,US,빅테크,714,840
+META,META,Meta Platforms,US,빅테크,660,714
 AVGO,AVGO,Broadcom,US,반도체,390,509
 NFLX,NFLX,Netflix,US,빅테크,76,100
 LLY,LLY,Eli Lilly,US,제약,900,1150
@@ -24,7 +24,7 @@ CRM,CRM,Salesforce,US,빅테크,200,260
 CRWV,CRWV,CoreWeave,US,빅테크,110,136
 RIVN,RIVN,Rivian,US,소비재,16,25
 ZM,ZM,Zoom,US,빅테크,85,100
-MU,MU,Micron Technology,US,반도체,1081,1485
+MU,MU,Micron Technology,US,반도체,1034,1485
 SNDK,SNDK,SanDisk,US,반도체,1800,2200
 WDC,WDC,Western Digital,US,반도체,532,700
 STX,STX,Seagate Technology,US,반도체,990,1224
