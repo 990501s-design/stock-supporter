@@ -384,6 +384,12 @@ function syncAlertDoc(mutate) {
     doc = (doc && typeof doc === "object") ? doc : {};
     if (!doc.rules) doc.rules = {};
     if (!doc.subs) doc.subs = {};
+    // 클라우드 읽기가 실패하면 빈 문서가 오는데, 그대로 저장하면 기존 알림이 전부 지워진다.
+    // 로컬에 남아 있는 설정을 먼저 합쳐 여러 종목 알림이 유지되도록 한다.
+    var localRules = loadAlerts(id);
+    Object.keys(localRules).forEach(function (t) {
+      if (!doc.rules[t]) doc.rules[t] = localRules[t];
+    });
     if (mutate) mutate(doc);
     if (state.pushSub) doc.subs[state.pushSubKey] = state.pushSub;
     state.alerts = doc.rules;
