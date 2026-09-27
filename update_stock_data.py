@@ -35,6 +35,10 @@ BACKTEST_YEARS = 20
 HIST_FETCH_PERIOD = "1y"  # 200일 이동평균 계산을 위해 1년치 수집 (아래 SR_LOOKBACK_DAYS로 기존 6개월 기준 계산은 그대로 유지)
 HIST_POINTS = 60  # 차트에 저장할 최근 거래일 수
 SR_LOOKBACK_DAYS = 126  # 지지선/저항선 계산에 사용할 거래일 수 (기존 6개월 조회 기간과 동일하게 유지)
+RISK_FETCH_PERIOD = "10y"  # 연평균 수익률/최대낙폭 계산용 (하루 한 번만 조회)
+RISK_BATCH_SIZE = 100  # 10년치는 데이터가 커서 나눠 받는다
+MIN_RISK_TRADING_DAYS = 250  # 최소 1년치는 있어야 계산
+MIN_RISK_DAYS_PER_YEAR = 200  # 연도별 낙폭 계산에 필요한 최소 거래일
 
 
 def round_price(val, market):
@@ -947,6 +951,104 @@ def fetch_extended_prices(yahoo_tickers, max_attempts=3):
     return result
 
 
+def load_existing_risk_data(html_text):
+    """기존 HTML에서 RISK_DATA(연평균수익률/최대낙폭) 를 파싱해 fallback 값으로 사용"""
+    m = re.search(r"var RISK_DATA = (\{.*?\});", html_text)
+    if not m:
+        return {}
+    try:
+        return json.loads(m.group(1))
+    except json.JSONDecodeError:
+        return {}
+
+
+def calc_risk_metrics(closes):
+    """연평균 수익률(CAGR)과 최대낙폭(MDD)을 계산.
+
+    - cagr:     기하평균 연수익률. 산술평균은 변동성이 클수록 실제보다 부풀려지므로 쓰지 않는다.
+    - avgMdd:   연도별로 그 해의 고점→저점 최대낙폭을 구해 평균낸 값("평범한 한 해의 출렁임").
+    - worstMdd: 전체 기간을 통틀어 가장 깊었던 낙폭("최악일 때 이만큼 빠졌다").
+    두 낙폭은 의미가 달라서 한쪽만으로는 판단이 안 되므로 둘 다 저장한다.
+    """
+    closes = closes.dropna()
+    if len(closes) < MIN_RISK_TRADING_DAYS:
+        return None
+    span_years = (closes.index[-1] - closes.index[0]).days / 365.25
+    if span_years < 1:
+        return None
+
+    yearly_mdd = []
+    for _year, group in closes.groupby(closes.index.year):
+        # 상장 첫 해·마지막 해처럼 거래일이 조각난 해는 낙폭이 과소평가되므로 제외
+        if len(group) < MIN_RISK_DAYS_PER_YEAR:
+            continue
+        yearly_mdd.append(float((group / group.cummax() - 1).min()))
+    if not yearly_mdd:
+        return None
+
+    first, last = float(closes.iloc[0]), float(closes.iloc[-1])
+    if first <= 0 or last <= 0:
+        return None
+
+    return {
+        "cagr": round(((last / first) ** (1 / span_years) - 1) * 100, 1),
+        "avgMdd": round(sum(yearly_mdd) / len(yearly_mdd) * 100, 1),
+        "worstMdd": round(float((closes / closes.cummax() - 1).min()) * 100, 1),
+        "years": round(span_years, 1),
+        "fullYears": len(yearly_mdd),
+        "from": str(closes.index[0].date()),
+        "to": str(closes.index[-1].date()),
+    }
+
+
+def fetch_risk_metrics(mapping_rows, fallback, full=False):
+    """종목별 장기 수익률·최대낙폭을 조회.
+
+    10년치 시세가 필요해 데이터량이 5분 주기 실행(1년치)의 10배라,
+    펀더멘털과 동일하게 --full-fundamentals 전용 실행에서만 갱신하고
+    평소에는 캐시된 값을 그대로 쓴다. 값 자체가 하루 단위로는 거의 안 변한다.
+    """
+    if not full:
+        return dict(fallback)
+
+    tickers = [r["yahoo_ticker"].strip() for r in mapping_rows if r["yahoo_ticker"].strip()]
+    print(f"장기 리스크·수익({RISK_FETCH_PERIOD}) 계산 중... {len(tickers)}개 종목")
+
+    closes_by_ticker = {}
+    for i in range(0, len(tickers), RISK_BATCH_SIZE):
+        chunk = tickers[i:i + RISK_BATCH_SIZE]
+        try:
+            data = yf.download(
+                chunk, period=RISK_FETCH_PERIOD, interval="1d",
+                group_by="ticker", threads=True, progress=False, auto_adjust=True,
+            )
+        except Exception as e:
+            print(f"  ⚠️ 배치 조회 실패({i}~{i + len(chunk)}): {e}")
+            continue
+        for t in chunk:
+            try:
+                closes_by_ticker[t] = data["Close"] if len(chunk) == 1 else data[t]["Close"]
+            except Exception:
+                pass
+
+    result = dict(fallback)
+    today = str(date.today())
+    computed = skipped = 0
+    for row in mapping_rows:
+        yahoo_ticker = row["yahoo_ticker"].strip()
+        original_ticker = row["original_ticker"].strip()
+        closes = closes_by_ticker.get(yahoo_ticker)
+        metrics = calc_risk_metrics(closes) if closes is not None else None
+        if metrics is None:
+            skipped += 1
+            continue
+        metrics["asOf"] = today
+        result[original_ticker] = metrics
+        computed += 1
+    print(f"  ✅ 장기 리스크·수익 {computed}개 계산, {skipped}개는 이력 부족으로 이전 값 유지")
+    return result
+
+
 def fetch_all(yahoo_tickers):
     """배치로 다운로드 (실패 종목은 개별 재시도)"""
     print(f"야후 파이낸스에서 {len(yahoo_tickers)}개 티커 데이터 수집 중...")
@@ -1100,6 +1202,7 @@ def main():
     market_summary_fallback = load_existing_market_summary(html_text)
     etf_holdings_fallback = load_existing_etf_holdings(html_text)
     fundamentals_fallback = load_existing_fundamentals(html_text)
+    risk_fallback = load_existing_risk_data(html_text)
 
     fetched = fetch_all(yahoo_tickers)
     print("네이버금융 국내 종목 실시간 시세 조회 중...")
@@ -1117,6 +1220,7 @@ def main():
     etf_holdings = fetch_etf_holdings(mapping_rows, etf_holdings_fallback)
 
     fundamentals = fetch_fundamentals(mapping_rows, fundamentals_fallback, full=full_fundamentals)
+    risk_data = fetch_risk_metrics(mapping_rows, risk_fallback, full=full_fundamentals)
 
     print("나스닥100(QQQ) / 금(IAU) 지난 20년 연평균 수익률 계산 중...")
     historical_returns = {
@@ -1219,6 +1323,18 @@ def main():
         )
         if fd_n == 0:
             print("🚨 HTML에서 FUNDAMENTALS_DATA 를 찾지 못했습니다. 펀더멘털 데이터는 갱신하지 않았습니다.")
+
+    if risk_data:
+        rd_json = json.dumps(risk_data, ensure_ascii=False)
+        rd_line = f"var RISK_DATA = {rd_json};"
+        new_html, rd_n = re.subn(
+            r"var RISK_DATA = \{.*?\};",
+            lambda _m: rd_line,
+            new_html,
+            count=1,
+        )
+        if rd_n == 0:
+            print("🚨 HTML에서 RISK_DATA 를 찾지 못했습니다. 장기 리스크·수익은 갱신하지 않았습니다.")
 
     HTML_PATH.write_text(new_html, encoding="utf-8")
     ok_count = sum(1 for t in yahoo_tickers if fetched.get(t) is not None)
