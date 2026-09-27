@@ -11,7 +11,7 @@ GOOGL,GOOGL,Alphabet A,US,빅테크,375,450
 AMZN,AMZN,Amazon,US,빅테크,270,333
 AAPL,AAPL,Apple,US,빅테크,273,334
 MSFT,MSFT,Microsoft,US,빅테크,440.1,550
-META,META,Meta Platforms,US,빅테크,660,714
+META,META,Meta Platforms,US,빅테크,660,800
 AVGO,AVGO,Broadcom,US,반도체,390,509
 NFLX,NFLX,Netflix,US,빅테크,76,100
 LLY,LLY,Eli Lilly,US,제약,900,1150
@@ -21,7 +21,7 @@ ORCL,Oracle,Oracle,US,빅테크,211,250
 DELL,DELL,Dell Technologies,US,반도체,420,560
 CRWD,CRWD,CrowdStrike,US,빅테크,172,230
 CRM,CRM,Salesforce,US,빅테크,200,260
-CRWV,CRWV,CoreWeave,US,빅테크,110,136
+CRWV,CRWV,CoreWeave,US,빅테크,100,136
 RIVN,RIVN,Rivian,US,소비재,16,25
 ZM,ZM,Zoom,US,빅테크,85,100
 MU,MU,Micron Technology,US,반도체,1034,1485
@@ -92,7 +92,7 @@ KOPN,KOPN,Kopin,US,로봇,2,4.4
 XYZ,Block XYZ,Block (Square),US,금융,62,86
 Z,Zillow,Zillow,US,빅테크,46,70
 INVH,INVHR,Invitation Homes,US,금융,7.3,11
-ABCL,ABCL,AbCellera Biologics,US,제약,3.2,14.2
+ABCL,ABCL,AbCellera Biologics,US,제약,8,14.2
 GPRO,GPRO,GoPro,US,소비재,1.4,2.3
 CRSP,CRSP,CRISPR Therapeutics,US,제약,52,74
 UBER,UBER,Uber,US,빅테크,82,100
@@ -406,7 +406,7 @@ GRMN,GRMN,Garmin,US,소비재,216.6,264.25
 IT,IT,Gartner,US,빅테크,,
 GE,GE,GE Aerospace,US,산업재,,
 GEHC,GEHC,GE HealthCare,US,헬스케어,,
-GEV,GEV,GE Vernova,US,산업재,,
+GEV,GEV,GE Vernova,US,산업재,950,1232
 GEN,GEN,Gen Digital,US,빅테크,,
 GNRC,GNRC,Generac,US,산업재,,
 GD,GD,General Dynamics,US,산업재,,
