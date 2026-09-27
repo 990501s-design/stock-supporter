@@ -35,8 +35,11 @@ BACKTEST_YEARS = 20
 HIST_FETCH_PERIOD = "1y"  # 200일 이동평균 계산을 위해 1년치 수집 (아래 SR_LOOKBACK_DAYS로 기존 6개월 기준 계산은 그대로 유지)
 HIST_POINTS = 60  # 차트에 저장할 최근 거래일 수
 SR_LOOKBACK_DAYS = 126  # 지지선/저항선 계산에 사용할 거래일 수 (기존 6개월 조회 기간과 동일하게 유지)
-RISK_FETCH_PERIOD = "10y"  # 연평균 수익률/최대낙폭 계산용 (하루 한 번만 조회)
-RISK_BATCH_SIZE = 100  # 10년치는 데이터가 커서 나눠 받는다
+# 상장 이래 전체 이력으로 계산한다. 10년 창은 2008 금융위기가 빠져서
+# 최악 낙폭이 크게 과소평가됐다(QQQ -35%로 나왔지만 실제로는 -83%).
+# 대신 종목마다 측정 기간이 달라지므로 UI에서 기간을 반드시 함께 보여줄 것.
+RISK_FETCH_PERIOD = "max"
+RISK_BATCH_SIZE = 100  # 전체 이력은 데이터가 커서 나눠 받는다
 MIN_RISK_TRADING_DAYS = 250  # 최소 1년치는 있어야 계산
 MIN_RISK_DAYS_PER_YEAR = 200  # 연도별 낙폭 계산에 필요한 최소 거래일
 
@@ -1004,7 +1007,7 @@ def calc_risk_metrics(closes):
 def fetch_risk_metrics(mapping_rows, fallback, full=False):
     """종목별 장기 수익률·최대낙폭을 조회.
 
-    10년치 시세가 필요해 데이터량이 5분 주기 실행(1년치)의 10배라,
+    상장 이래 전체 이력이 필요해 데이터량이 5분 주기 실행(1년치)의 수십 배라,
     펀더멘털과 동일하게 --full-fundamentals 전용 실행에서만 갱신하고
     평소에는 캐시된 값을 그대로 쓴다. 값 자체가 하루 단위로는 거의 안 변한다.
     """
