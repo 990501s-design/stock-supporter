@@ -993,10 +993,15 @@ def calc_risk_metrics(closes):
     if first <= 0 or last <= 0:
         return None
 
+    # 역대 최고 종가. 현재 낙폭은 5분마다 바뀌는 현재가로 프런트에서 계산하므로
+    # 여기서는 기준이 되는 고점만 넘긴다(고점은 하루 단위로만 갱신되면 충분).
+    high_idx = int(closes.values.argmax())
     return {
         "cagr": round(((last / first) ** (1 / span_years) - 1) * 100, 1),
         "avgMdd": round(sum(yearly_mdd) / len(yearly_mdd) * 100, 1),
         "worstMdd": round(float((closes / closes.cummax() - 1).min()) * 100, 1),
+        "high": round(float(closes.iloc[high_idx]), 4),
+        "highDate": str(closes.index[high_idx].date()),
         "years": round(span_years, 1),
         "fullYears": len(yearly_mdd),
         "from": str(closes.index[0].date()),
