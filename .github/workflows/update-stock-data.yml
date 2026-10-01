@@ -29,12 +29,8 @@ jobs:
       - name: Run update script
         run: python3 update_stock_data.py
 
-      # 방금 갱신된 시세로 사용자가 설정한 가격/RSI 조건을 검사해 폰으로 푸시 발송
-      - name: Send price/RSI alerts
-        env:
-          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-        run: python3 send_price_alerts.py
-
+      # 시세 반영이 최우선이므로 알림 발송보다 먼저 푸시한다.
+      # (알림 단계가 죽으면 이후 스텝이 통째로 안 돌아서 앱이 며칠째 멈춘 적 있음)
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
@@ -46,3 +42,11 @@ jobs:
             git commit -m "chore: 주가/RSI/등락률 자동 갱신 [skip ci]"
             git push
           fi
+
+      # 방금 갱신된 시세로 사용자가 설정한 가격/RSI 조건을 검사해 폰으로 푸시 발송.
+      # 알림은 부가 기능이라 실패해도 시세 갱신을 막지 않게 한다.
+      - name: Send price/RSI alerts
+        continue-on-error: true
+        env:
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+        run: python3 send_price_alerts.py
