@@ -24,7 +24,7 @@ CRM,CRM,Salesforce,US,빅테크,200,260
 CRWV,CRWV,CoreWeave,US,빅테크,100,136
 RIVN,RIVN,Rivian,US,소비재,16,25
 ZM,ZM,Zoom,US,빅테크,85,100
-MU,MU,Micron Technology,US,반도체,1034,1485
+MU,MU,Micron Technology,US,반도체,1200,1485
 SNDK,SNDK,SanDisk,US,반도체,1800,2200
 WDC,WDC,Western Digital,US,반도체,532,700
 STX,STX,Seagate Technology,US,반도체,990,1224
@@ -40,7 +40,7 @@ COST,COST,Costco,US,소비재,968,1050
 UNH,UNH,UnitedHealth,US,제약,376,430
 CMG,CMG,Chipotle,US,소비재,36,45
 DPZ,DPZ,Domino's Pizza,US,소비재,405,450
-NKE,NIKE,Nike,US,소비재,41,56
+NKE,NIKE,Nike,US,소비재,35,41
 LULU,LULU,Lululemon,US,소비재,106,126
 CROX,Crocs,Crocs,US,소비재,100,154
 SBUX,SBUX,Starbucks,US,소비재,83,105
@@ -48,7 +48,7 @@ BOTZ,BOTZ,로보틱스 ETF,US,로봇,32,38
 ISRG,ISRG,Intuitive Surgical,US,로봇,477,650
 M,Macy's,Macy's,US,소비재,22,25
 HD,HD,Home Depot,US,소비재,300,346
-IONQ,IONQ,IonQ,US,양자컴퓨팅,50,65
+IONQ,IONQ,IonQ,US,양자컴퓨팅,52,65
 QBTS,QBTS,D-Wave Quantum,US,양자컴퓨팅,22,40
 RGTI,RGTI,Rigetti Computing,US,양자컴퓨팅,20,35
 QUBT,QUBT,Quantum Computing Inc,US,양자컴퓨팅,12.5,20
